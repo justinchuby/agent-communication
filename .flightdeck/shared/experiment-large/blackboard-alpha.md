@@ -15,8 +15,8 @@ See blackboard-cross.md for public API that Beta depends on.
 ## Tasks
 
 ### alpha-models
-- owner: TBD
-- status: pending
+- owner: f2dc8aa6
+- status: done
 - file: A:MOD
 - spec: Define TextDocument, Token, FrequencyResult, SentimentResult, StatisticsResult dataclasses
 - depends: none
