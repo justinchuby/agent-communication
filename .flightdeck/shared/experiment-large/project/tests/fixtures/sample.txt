@@ -1,0 +1,10 @@
+The quick brown fox jumps over the lazy dog. The dog barked loudly at the fox.
+This is a simple test document for text analysis. It contains multiple sentences with
+various words. Some words repeat frequently while others appear only once.
+
+The analysis should detect that common words like "the" and "is" appear multiple times.
+Meanwhile, words like "jumps" and "barked" are less frequent. The sentiment is mostly
+neutral with no strong positive or negative indicators.
+
+This final paragraph adds more text for statistical analysis. The vocabulary diversity
+should be moderate given the repetition of common English words throughout the document.

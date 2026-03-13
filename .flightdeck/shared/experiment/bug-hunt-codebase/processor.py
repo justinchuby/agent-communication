@@ -23,7 +23,7 @@ def compute_user_stats(user_records) -> List[UserStats]:
     # BUG: This code was written when load_user_records() returned a flat
     # list of (user_id, records) tuples. After the refactor to return a dict,
     # iterating over user_records yields string keys, not (user_id, records).
-    for user_id, records in user_records:
+    for user_id, records in user_records.items():
         total_score = sum(record.score for record in records)
         action_names = [record.action for record in records]
         average_score = total_score / len(records) if records else 0.0
