@@ -134,6 +134,34 @@ Same issue — lines 1-16 still contain original stub text.
 
 **Summary:** 5 non-blocking suggestions, 0 blocking issues. Code is approved for readability.
 
+### Code Review — reviewer: 11a34f74 — verdict: changes_needed — scope: all 6 core files
+
+**Overall: SOLID.** 5 of 6 files approved. 1 blocking bug in frequency.py (now fixed by @27a458e8). All files match the API contract. Error handling is consistent. Import patterns are uniform (absolute imports throughout).
+
+**Per-file verdicts:**
+
+file: A:MOD — reviewer: 11a34f74 — verdict: approved — notes: All 5 dataclasses and 4 error types match contract exactly. Fields, types, hierarchy correct. Token.is_stopword has no default — forces explicit construction. FileNotFoundError shadows built-in (design decision per contract).
+
+file: A:PAR — reviewer: 11a34f74 — verdict: approved — notes: parse_file and parse_string correct per spec. Good DRY: parse_file delegates to parse_string. _strip_control_characters correctly uses unicodedata Cc check preserving newlines. Minor: TOCTOU race — os.path.exists() then open() means vanishing file raises built-in FileNotFoundError instead of custom one.
+
+file: A:TOK — reviewer: 11a34f74 — verdict: approved — notes: Correct splitting, lowercasing, punctuation stripping, empty filtering, sequential positioning. STOP_WORDS meets minimum (33 words). Compiled regex good for performance. is_stopword marking only when remove_stopwords=True — controls all downstream behavior.
+
+file: A:FRQ — reviewer: 11a34f74 — verdict: changes_needed (fixed) — notes: BUG: negative top_n produced silently wrong results via Python slice semantics (top_n=-1 dropped last entry). Fix committed by @27a458e8: ValueError on negative top_n. Secondary alphabetical sort for determinism is a nice touch. Division-by-zero on empty input correctly handled.
+
+file: A:SNT — reviewer: 11a34f74 — verdict: approved — notes: Clean and correct. Early return for zero-total case. Both lexicons have exactly 30 words matching spec. Clamping with max/min is idiomatic. Threshold logic correct (strict inequalities, boundary → neutral).
+
+file: A:STA — reviewer: 11a34f74 — verdict: approved — notes: All 6 metrics correct per spec. SENTENCE_ENDINGS as frozenset communicates immutability. Empty-token edge cases handled. Naive sentence counting matches spec exactly.
+
+**Blocking issues (1 — resolved):**
+1. ~~frequency.py: Negative top_n produces silently incorrect results~~ — FIXED by @27a458e8 (ValueError guard added).
+
+**Non-blocking observations (3):**
+1. parser.py: TOCTOU race — os.path.exists() before open(). Low risk, could be eliminated by try/except on open().
+2. frequency.py + statistics.py: Module docstrings still contain stub boilerplate.
+3. Cross-module: stopword-marking creates implicit coupling between tokenizer and downstream modules.
+
+**Summary:** 1 blocking issue (now fixed). 5 approved + 1 approved-after-fix. All 6 files pass code review.
+
 ## Test Results
 Format: `suite: name — tester: agent-id — result: pass(N)/fail(N) — details: string`
 
