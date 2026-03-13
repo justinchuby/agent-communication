@@ -159,5 +159,12 @@ challenger: 664dee0d — target: A:PAR/no-size-guard — challenge: `parse_file(
 challenger: 664dee0d — target: A:FRQ/top-n-edge-cases — challenge: `word_frequency(tokens, top_n=0)` and `top_n=-1` behavior is undefined. Also, empty token list → division by zero in relative_frequency calculation (count/total where total=0). Spec must define: top_n≤0 raises ValueError, empty input returns FrequencyResult with zeros and empty dicts. — resolution: pending
 
 ## Documentation
-- README section for core library: pending
-- API docstrings: pending (each developer owns their file's docstrings)
+- README section for core library: done (owner: a832aad1)
+- API docstrings: done — all 7 modules verified against blackboard-cross.md contract
+  - models.py: 5 dataclass + 4 error docstrings ✓
+  - parser.py: parse_file, parse_string + helpers with params/raises ✓
+  - tokenizer.py: tokenize + STOP_WORDS ✓
+  - frequency.py: word_frequency ✓ (note: stub "Owner" line remains in module docstring)
+  - sentiment.py: analyze_sentiment + lexicon sets ✓
+  - statistics.py: compute_statistics ✓ (note: stub "Owner" line remains in module docstring)
+  - __init__.py: module docstring + __all__ with 15 symbols ✓
