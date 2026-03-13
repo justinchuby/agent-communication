@@ -25,8 +25,15 @@ class InMemoryStorage:
         self._lock = threading.Lock()
 
     def save(self, record: URLRecord) -> None:
-        """Store a URLRecord, indexed by both code and URL."""
+        """Store a URLRecord, indexed by both code and URL.
+
+        If the code already exists with a different URL, the old URL's
+        secondary index entry is removed to prevent stale dedup lookups.
+        """
         with self._lock:
+            old = self._by_code.get(record.code)
+            if old is not None and old.url != record.url:
+                self._by_url.pop(old.url, None)
             self._by_code[record.code] = record
             self._by_url[record.url] = record
 
