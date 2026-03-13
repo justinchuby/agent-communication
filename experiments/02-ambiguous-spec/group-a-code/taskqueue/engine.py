@@ -17,10 +17,9 @@ from typing import Any, Callable, Optional
 
 from taskqueue.models import (
     PRIORITY_DEFAULT,
-    PRIORITY_MAX,
-    PRIORITY_MIN,
     InvalidPriorityError,
     Task,
+    TaskAlreadyExistsError,
     TaskNotFoundError,
     TaskResult,
     TaskStatus,
@@ -106,8 +105,6 @@ class TaskQueue:
 
         with self._lock:
             if task.id in self._tasks:
-                # Extremely unlikely with 12-char hex UUIDs, but handle it
-                from taskqueue.models import TaskAlreadyExistsError
                 raise TaskAlreadyExistsError(f"Task with ID {task.id} already exists")
             self._tasks[task.id] = task
 
@@ -134,27 +131,19 @@ class TaskQueue:
         """
         task = self._get_task(task_id)
         with self._lock:
-            if task.status == TaskStatus.PENDING:
-                return TaskResult(
-                    task_id=task.id, success=False,
-                    error="Task not yet started", attempts=task.attempts,
-                )
-            if task.status in (TaskStatus.RUNNING, TaskStatus.RETRYING):
-                return TaskResult(
-                    task_id=task.id, success=False,
-                    error="Task still running", attempts=task.attempts,
-                )
-            duration = (
-                (task.completed_at - task.started_at)
-                if task.started_at is not None and task.completed_at is not None
-                else 0.0
-            )
+            if task.is_terminal:
+                return task.to_result()
+            # Non-terminal: provide informational error messages
+            _status_messages = {
+                TaskStatus.PENDING: "Task is pending",
+                TaskStatus.RUNNING: "Task is still running",
+                TaskStatus.RETRYING: "Task is retrying",
+            }
             return TaskResult(
                 task_id=task.id,
-                success=task.status == TaskStatus.SUCCESS,
-                result=task.result,
-                error=task.error,
-                duration=duration,
+                success=False,
+                error=_status_messages.get(task.status, f"Task is {task.status.value}"),
+                duration=0.0,
                 attempts=task.attempts,
             )
 
@@ -169,11 +158,10 @@ class TaskQueue:
         """
         task = self._get_task(task_id)
         with self._lock:
-            if task.status in (TaskStatus.SUCCESS, TaskStatus.FAILED, TaskStatus.CANCELLED):
+            if task.is_terminal:
                 return False
-            task.status = TaskStatus.CANCELLED
+            task.transition_to(TaskStatus.CANCELLED)
             task.completed_at = time.monotonic()
-            # Cancel the in-flight future if one exists
             future = self._futures.pop(task.id, None)
             if future is not None:
                 future.cancel()
@@ -255,7 +243,7 @@ class TaskQueue:
         with self._lock:
             if task.status == TaskStatus.CANCELLED:
                 return
-            task.status = TaskStatus.RUNNING
+            task.transition_to(TaskStatus.RUNNING)
             task.attempts += 1
             if task.started_at is None:
                 task.started_at = time.monotonic()
@@ -263,7 +251,9 @@ class TaskQueue:
         try:
             result = self._run_with_timeout(task)
             with self._lock:
-                task.status = TaskStatus.SUCCESS
+                if task.status == TaskStatus.CANCELLED:
+                    return
+                task.transition_to(TaskStatus.SUCCESS)
                 task.result = result
                 task.error = None
                 task.completed_at = time.monotonic()
@@ -312,8 +302,8 @@ class TaskQueue:
                 return
             self._futures.pop(task.id, None)
 
-            if task.attempts <= task.max_retries:
-                task.status = TaskStatus.RETRYING
+            if task.retries_remaining > 0:
+                task.transition_to(TaskStatus.RETRYING)
                 task.error = error_msg
                 backoff_delay = 1.0 * (2 ** (task.attempts - 1))
                 logger.debug(
@@ -321,7 +311,7 @@ class TaskQueue:
                     task.id, backoff_delay, task.attempts, task.max_retries + 1,
                 )
             else:
-                task.status = TaskStatus.FAILED
+                task.transition_to(TaskStatus.FAILED)
                 task.error = error_msg
                 task.completed_at = time.monotonic()
                 logger.debug("Task %s failed permanently after %d attempts", task.id, task.attempts)
@@ -357,6 +347,6 @@ class TaskQueue:
         """Cancel all tasks that haven't started running yet."""
         with self._lock:
             for task in self._tasks.values():
-                if task.status in (TaskStatus.PENDING, TaskStatus.RETRYING):
-                    task.status = TaskStatus.CANCELLED
+                if not task.is_terminal and task.status != TaskStatus.RUNNING:
+                    task.transition_to(TaskStatus.CANCELLED)
                     task.completed_at = time.monotonic()
