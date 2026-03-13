@@ -22,8 +22,8 @@ See blackboard-cross.md for public API that Beta depends on.
 - depends: none
 
 ### alpha-parser
-- owner: TBD
-- status: pending
+- owner: 9ff61817
+- status: done
 - file: A:PAR
 - spec: parse_file(path) → TextDocument, parse_string(text) → TextDocument. Handle UTF-8, strip control chars.
 - depends: alpha-models
@@ -43,15 +43,15 @@ See blackboard-cross.md for public API that Beta depends on.
 - depends: alpha-models, alpha-tokenizer
 
 ### alpha-sentiment
-- owner: TBD
-- status: pending
+- owner: d6ee7d38
+- status: done
 - file: A:SNT
 - spec: analyze_sentiment(tokens) → SentimentResult. Simple lexicon-based: built-in positive/negative word lists, score = (pos - neg) / total. Return score + label (positive/negative/neutral).
 - depends: alpha-models, alpha-tokenizer
 
 ### alpha-statistics
-- owner: TBD
-- status: pending
+- owner: b748aeb6
+- status: done
 - file: A:STA
 - spec: compute_statistics(doc, tokens) → StatisticsResult. char_count, word_count, sentence_count, avg_word_length, vocabulary_size, lexical_diversity.
 - depends: alpha-models, alpha-tokenizer
