@@ -1,98 +1,111 @@
 # Experiment 02: Ambiguous-Spec A/B Test — Observations
 ### Observer: Radical Thinker (7117b453)
 ### Experiment: English (Group A) vs AECP (Group B) — Task Queue Library
-### Status: IN PROGRESS
+### Status: COMPLETE
 ### Key Difference from Exp 01: 9 deliberate ambiguities, NO typed interfaces in spec
 
 ---
 
-## Message Counts (SYSTEM-LEVEL — not self-reported)
+## Group A (English / ab2-english) Observations
 
-| Metric | Group A (English) | Group B (AECP) |
-|--------|:-:|:-:|
-| Total Messages | 0 | 0 |
-| Clarification Requests | 0 | 0 |
-| Status Updates | 0 | 0 |
-| Social | 0 | 0 |
-| Duplicates | 0 | 0 |
-| Design Decisions | 0 | 0 |
-| Implementation Announcements | 0 | 0 |
-| Review Feedback | 0 | 0 |
-| Test Results | 0 | 0 |
-| Fix Announcements | 0 | 0 |
-| Tests Passing | —/— | —/— |
+### Communication Pattern
+- Dev A sent 5 clarification questions BEFORE the architect posted a design (priority direction, retry behavior, timeout handling, concurrency model, status states)
+- Dev B sent 6 clarification questions BEFORE the architect posted a design + 1 follow-up after
+- Architect posted ONE comprehensive design message resolving all 9 ambiguities at once
+- After design: status updates, code review, fix confirmations, social/celebration messages
+- Total messages: ~19+ (approximate — counted from system notifications)
+- Total clarifications: 12 (5 + 6 + 1)
 
----
+### Development Flow
+1. Devs started, immediately hit ambiguities, asked questions
+2. Architect posted comprehensive design
+3. Dev A implemented models.py + __init__.py (FSM, Task dataclass, error types)
+4. Dev B implemented engine.py (TaskQueue, ThreadPoolExecutor, priority scheduling)
+5. Code Reviewer found 2 medium issues (cancelled task error=None, Python 3.10 TimeoutError compat) + 2 low
+6. Both devs fixed issues
+7. Reviewer approved
+8. QA Tester wrote 21 tests — all passed
 
-## Ambiguity Resolution Tracking
-
-| AMB | Description | Group A Resolution | Group A Method | Group B Resolution | Group B Method |
-|-----|-------------|-------------------|----------------|-------------------|----------------|
-| AMB-1 | Priority direction (1=highest or 10=highest?) | — | — | — | — |
-| AMB-2 | Retry count (how many?) | — | — | — | — |
-| AMB-3 | Retry backoff strategy | — | — | — | — |
-| AMB-4 | Failure definition (exception? return value?) | — | — | — | — |
-| AMB-5 | Timeout default value | — | — | — | — |
-| AMB-6 | Timeout behavior (cancel? raise? kill?) | — | — | — | — |
-| AMB-7 | Concurrency model (threads? async? max workers?) | — | — | — | — |
-| AMB-8 | Status states (which ones?) | — | — | — | — |
-| AMB-9 | Status transitions (valid transitions? backwards?) | — | — | — | — |
-
-### Resolution Method Key
-- **proactive**: Architect resolved before anyone asked
-- **reactive**: Dev asked, architect answered
-- **assumed**: Dev made their own assumption without asking
-- **conflicting**: Devs made different assumptions (coordination failure)
+### Key Observations
+- Clarification questions came in BURSTS — both devs asked multiple questions in single messages
+- Architect waited for questions before posting design (reactive pattern)
+- Review found real bugs that testing alone wouldn't catch (Python 3.10 compat)
+- Social messages at end (celebration, thanks) added ~4 messages with no technical content
 
 ---
 
-## Group A Message Log
+## Group B (AECP / Blackboard) Observations
 
-| # | Sender | Role | Classification | AMB Refs | Summary |
-|---|--------|------|---------------|----------|---------|
+### Communication Pattern
+- Architect wrote ALL design decisions to blackboard BEFORE devs started
+- Architect also wrote typed Python interface contracts (not just prose)
+- Devs read blackboard silently, implemented exactly what was specified
+- Reviewer wrote findings to blackboard Findings section (not messages)
+- Total messages: ~5-7 (structured DONE/VERDICT signals only)
+- Total clarifications: 0
 
----
+### Development Flow
+1. Architect resolved all 9 ambiguities on blackboard with typed interfaces
+2. Dev A implemented models.py + __init__.py (following interface contract verbatim)
+3. Dev B implemented engine.py (citing "Design decisions from architect blackboard" in code comments)
+4. Reviewer checked code, found 2 minor non-blocking issues, wrote to blackboard Findings
+5. Dev A fixed off-by-one (F-1) after reading blackboard
+6. QA Tester wrote 18 tests — all passed
 
-## Group B Message Log
-
-| # | Sender | Role | Classification | AMB Refs | Summary |
-|---|--------|------|---------------|----------|---------|
-
----
-
-## Group B Blackboard Design Decisions Timeline
-
-Tracking whether architect filled in design decisions BEFORE devs started.
-
-| Decision Section | Filled? | Before Dev Start? | Content Summary |
-|-----------------|---------|-------------------|-----------------|
-| Priority Model | ❌ | — | — |
-| Retry Policy | ❌ | — | — |
-| Timeout Behavior | ❌ | — | — |
-| Concurrency Model | ❌ | — | — |
-| Status Transitions | ❌ | — | — |
-| Interface Contract | ❌ | — | — |
+### Key Observations
+- Zero clarification traffic — blackboard forced proactive ambiguity resolution
+- Developers CITED the blackboard in their code (engine.py line 8: "Design decisions (from architect blackboard)")
+- Reviewer used blackboard Findings section instead of messages — even review is async/artifact-based
+- No social/celebration messages — pure signal, no noise
+- Self-reported "1 message" on blackboard is inaccurate (min 5 signals required by protocol)
 
 ---
 
-## Conflicting Assumptions Check
+## Cross-Group Comparison
 
-| AMB | Group A: Dev A assumed | Group A: Dev B assumed | Conflict? |
-|-----|----------------------|----------------------|-----------|
-| AMB-1 | — | — | — |
-| AMB-7 | — | — | — |
-| AMB-8 | — | — | — |
+### Clarification Patterns
+- Group A: 12 clarifications (reactive — devs discover ambiguities during work)
+- Group B: 0 clarifications (proactive — architect resolves before work begins)
+- Pattern: In Group A, ambiguity discovery is DISTRIBUTED (each dev finds ambiguities independently). In Group B, resolution is CENTRALIZED (architect does it once on blackboard).
+
+### Design Convergence
+Both groups independently chose nearly identical architectures:
+- ThreadPoolExecutor with 4 default workers
+- Priority 1 = highest, range 1-10
+- 3 retries with exponential backoff
+- 30s default timeout
+- FSM-based status transitions
+- Only difference: Group B has 7 status states (adds RETRYING), Group A has 6
+
+### Communication Efficiency
+- Group A: ~19+ messages for 12 clarifications + coordination + social
+- Group B: ~5-7 messages for 0 clarifications + structured signals only
+- Ratio: ~3:1 message reduction
+- The 12 clarification messages in Group A represent ~63% of their communication overhead
+
+### Quality Comparison
+- Group A review found 2 medium bugs (cancelled error, Py3.10 compat)
+- Group B review found 2 minor issues (off-by-one, import style)
+- Both groups produced working, tested code
+- Group A arguably had MORE thorough review (English discussion enables deeper exploration)
 
 ---
 
-## Emergent Patterns
+## Observer Notes
+- Radical Thinker observer (7117b453) could NOT join either group chat (system access limitation — same issue as Exp 01)
+- Message counts reconstructed from system notifications and artifact analysis, not direct observation
+- Self-reported blackboard metrics confirmed unreliable (claimed 1 message, actual ~5-7)
+- Future experiments need automated system-level message capture
 
-*(Monitoring)*
+---
 
-## Failures / Breakdowns
+## Measurement Framework Results
+(Filling in the metrics from measurement.md)
 
-*(Monitoring)*
-
-## Protocol Violations (Group B)
-
-*(Monitoring)*
+| Metric | Group A (English) | Group B (AECP) | Delta |
+|--------|:-:|:-:|:-:|
+| Total messages | ~19+ | ~5-7 | ~63-74% reduction |
+| Clarification requests | 12 | 0 | 100% reduction |
+| Tests passing | 21/21 | 18/18+ | Both pass |
+| Code review issues | 2 medium + 2 low | 2 minor | Lower severity in B |
+| Ambiguities resolved | 9/9 (reactive) | 9/9 (proactive) | Same coverage, different timing |
