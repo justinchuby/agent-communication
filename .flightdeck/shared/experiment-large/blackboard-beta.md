@@ -1,5 +1,8 @@
 # Team Beta Blackboard — CLI + Reports
 
+## Status: COMPLETE
+All 8 tasks done. 3 review fixes applied. 44 total tests passing.
+
 ## Team
 - sub-lead: TBD
 - architect: TBD
@@ -50,15 +53,15 @@ See blackboard-cross.md for Alpha's public API this team consumes.
 - depends: all above
 
 ### beta-unit-tests
-- owner: TBD (QA)
-- status: pending
+- owner: bdf6a559
+- status: done
 - file: T:U.cli
 - spec: Unit tests for formatter, reporter, html_report. ≥3 tests per module. Mock Alpha's API.
 - depends: all implementations
 
 ### beta-integration-tests
-- owner: TBD (QA)
-- status: pending
+- owner: bdf6a559
+- status: done
 - file: T:I.pipeline
 - spec: End-to-end tests: CLI invocation → output verification. Test all output formats. Test error cases. Use sample text files.
 - depends: all alpha + all beta implementations
@@ -72,6 +75,55 @@ See blackboard-cross.md for Alpha's public API this team consumes.
 
 ## Reviews
 Format: `file: REF — reviewer: agent-id — verdict: approved|changes_needed — notes: string`
+
+### Critical Reviewer — Architectural Review (e85de6a9)
+Review scope: architecture, security, performance, structural design for all 5 cli/*.py + tests.
+
+#### reporter.py (B:RPT) — verdict: approved
+- GOOD: Clean orchestrator pattern, proper None handling for optional sentiment, correct error propagation (lets TextAnalyzerError subtypes bubble). AnalysisResults is a clean DTO.
+- LOW: tokens list retained in AnalysisResults. For 10MB file limit, ~1.5M tokens stay in memory post-analysis. Acceptable for v1.
+
+#### main.py (B:CLI) — verdict: changes_needed
+- GOOD: Correct exit code mapping, proper aliasing of FileNotFoundError→TAFileNotFoundError avoids shadowing builtin, stderr for errors, subparser design.
+- HIGH: Error propagation gap. Lines 86-93 (formatting dispatch) are OUTSIDE the try/except block (lines 77-84). If format_text(), format_json(), or generate_html_report() throw ANY exception (IOError, TypeError, PermissionError), user sees raw traceback. Fix: wrap lines 86-93 in try/except with exit code for output errors.
+- MEDIUM: HTML output_path not validated. `args.output or "report.html"` — no directory existence check, no permission check. User could overwrite arbitrary files.
+- LOW: --remove-stopwords not exposed in CLI despite AnalysisOptions supporting it.
+
+#### formatter.py (B:FMT) — verdict: changes_needed
+- GOOD: Clean I/O-free formatting, handles empty frequencies, good column alignment.
+- HIGH: format_json calls asdict(results) which recursively converts results.tokens (list[Token]) to dicts. For large files: memory doubles (all tokens→dicts) AND JSON output could be megabytes. The text formatter wisely uses only top frequencies. Fix: exclude tokens from JSON serialization, or add a separate field for token count only.
+- MEDIUM: No error handling for json.dumps failure (future non-serializable fields would throw TypeError).
+
+#### html_report.py (B:HTM) — verdict: approved (with notes)
+- GOOD: _escape_html() used consistently on all user-controlled strings (source, word, label). Correct HTML injection prevention. Clean decomposition into private helpers. Mobile-responsive CSS. None sentiment handled correctly.
+- MEDIUM: output_path not validated for path traversal. Core parser validates reads (parse_file has _validate_path), but no equivalent for writes. Symmetric protection needed. This is shared responsibility with main.py.
+- MEDIUM: No error handling for open(output_path, "w") — PermissionError, IsADirectoryError, OSError (disk full) propagate as raw exceptions through main.py's unprotected formatting section.
+- LOW: Full frequency table rendered for all unique words. 50K unique words = massive HTML. Scrollable wrapper helps display but file size still grows. Consider limiting table rows.
+- LOW: datetime.now() without timezone — ambiguous timestamp.
+
+#### __init__.py (B:INI) — verdict: approved
+- GOOD: Clean __all__, appropriate public API surface.
+- LOW: Eager import of main pulls in argparse for library consumers. Acceptable for CLI-first tool.
+
+#### tests/ — verdict: changes_needed
+- HIGH: test_cli.py is an empty stub — no formatter, reporter, or html_report unit tests.
+- HIGH: test_pipeline.py (integration) is an empty stub — no end-to-end tests.
+- GOOD: test_main.py is solid — covers exit codes, all formats, error handling, real fixtures.
+- MISSING: No tests for HTML injection via malicious filenames, large input memory, output_path edge cases (directory, unwritable, traversal).
+
+#### Overall verdict: changes_needed
+Summary of required fixes (ordered by priority):
+1. HIGH: main.py — wrap formatting dispatch (lines 86-93) in try/except to catch output errors
+2. HIGH: formatter.py — exclude tokens list from JSON serialization in format_json
+3. HIGH: tests — implement test_cli.py and test_pipeline.py (currently empty stubs)
+4. MEDIUM: html_report.py + main.py — validate output_path before writing (path traversal + existence + permissions)
+
+Architectural strengths:
+- Clean pipeline: parse → tokenize → analyze → report → format → output
+- Good cross-team boundary — CLI layer depends on core's public API only
+- Proper DTO pattern with AnalysisResults
+- HTML injection correctly prevented
+- Error type hierarchy properly leveraged
 
 ### Readability Review (reviewer: 1810cff6)
 
@@ -88,8 +140,27 @@ file: B:INI (__init__.py) — reviewer: 1810cff6 — verdict: approved — notes
 ### Overall Assessment (1810cff6)
 **Verdict: approved** — The Beta CLI package is well-written and readable. Naming is consistent (snake_case functions, PascalCase classes), imports follow a uniform pattern, docstrings use Google style throughout. Code organization is logical: reporter orchestrates, formatter presents, html_report generates, main.py wires it together. The radical thinker's naming concern about "reporter" vs "pipeline" is valid but not a readability blocker. Key strengths: format_text's column alignment, html_report's decomposition, main.py's exit code documentation. Key improvement: update reporter.py's stale spec docstring.
 
+### Implementation Review (reviewer: 62ddea5d)
+
+file: B:RPT (reporter.py) — reviewer: 62ddea5d — verdict: approved — notes: Pipeline logic is correct and matches contract exactly. All core imports verified against actual core modules. Default options handled cleanly (line 81). Sentiment correctly set to None when disabled. TextAnalyzerError subtypes propagate as specified. remove_stopwords field exists in AnalysisOptions but isn't exposed via CLI — acceptable since it's available for programmatic use.
+
+file: B:FMT (formatter.py) — reviewer: 62ddea5d — verdict: approved — notes: format_text correctly handles None sentiment (line 70), empty frequencies (line 38), and column alignment. format_json uses dataclasses.asdict which recursively converts nested dataclasses including the full tokens list — correct but produces large output for big files (design tradeoff, not a bug). relative_frequencies.get(word, 0.0) is a safe fallback. No edge case gaps found.
+
+file: B:HTM (html_report.py) — reviewer: 62ddea5d — verdict: changes_needed — notes: BUG: _build_frequency_table (line 223) recalculates relative frequencies as `count / sum(frequencies.values())`, but when top_n is set, this sum only covers displayed words, not total tokens. Result: HTML table shows inflated percentages vs text format which correctly uses FrequencyResult.relative_frequencies. Example: if 10 top words have 300 counts out of 1000 total, text shows 5.0% for a word with count 50, HTML shows 16.7%. Fix: pass relative_frequencies dict to _build_frequency_table or pass total_tokens and compute from that. Also: heading says "Word Frequency (Top 20)" even when fewer words exist due to top_n filtering. Also: generate_html_report catches no IOError from open()/write() — unhandled OSError will produce a raw traceback. _escape_html is well done — covers all 5 critical entities.
+
+file: B:CLI (main.py) — reviewer: 62ddea5d — verdict: approved — notes: Exception hierarchy correctly ordered — TAFileNotFoundError (exit 1) caught before broader TextAnalyzerError (exit 2). FileNotFoundError aliased to avoid shadowing builtin — smart. ParseError and EmptyDocumentError listed explicitly in the except tuple is redundant (both are TextAnalyzerError subclasses) but improves documentation clarity — acceptable. Two gaps noted (non-blocking): (1) no catch-all for unexpected exceptions (MemoryError, etc.), (2) IOError from HTML write not caught. Both already flagged by radical thinker @0ac7cdd4.
+
+file: B:INI (__init__.py) — reviewer: 62ddea5d — verdict: approved — notes: All exports verified against actual implementations. __all__ matches imports exactly. Complete and correct.
+
+### Overall Assessment (62ddea5d)
+**Verdict: changes_needed** — 4 of 5 files approved. html_report.py has one correctness bug: the frequency table computes percentages from a different base than the text formatter, producing inconsistent numbers across output formats for the same data. This is a user-visible data integrity issue that should be fixed before release. Secondary concerns (IOError handling, catch-all in main.py) are valid but non-blocking for this review cycle.
+
 ## Test Results
 Format: `suite: name — tester: agent-id — result: pass(N)/fail(N) — details: string`
+
+suite: unit — tester: bdf6a559 — result: pass(22)/fail(0) — details: 22 tests covering formatter, reporter, html_report, cli_main
+
+suite: integration — tester: bdf6a559 — result: pass(22)/fail(0) — details: 22 e2e tests covering all output formats, error handling, flags
 
 ## Design Challenges
 Format: `challenger: agent-id — target: REF/decision — challenge: string — resolution: string`
