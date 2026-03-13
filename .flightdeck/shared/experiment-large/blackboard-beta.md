@@ -22,8 +22,8 @@ See blackboard-cross.md for Alpha's public API this team consumes.
 - depends: cross-team API contract
 
 ### beta-formatter
-- owner: TBD
-- status: pending
+- owner: 777b1610
+- status: done
 - file: B:FMT
 - spec: format_text(results) → str, format_json(results) → str. Text format: human-readable table. JSON: serialized results dict. Handle all result types (frequency, sentiment, statistics).
 - depends: cross-team API contract, alpha-models (for result types)
