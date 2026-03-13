@@ -104,7 +104,14 @@ class Task:
 
     @property
     def retries_remaining(self) -> int:
-        return max(0, self.max_retries - self.attempts)
+        """Number of retry attempts still available if the task keeps failing.
+
+        Engine increments attempts before each execution (including initial),
+        so retries_remaining accounts for attempts counting the initial run.
+        """
+        if self.attempts == 0:
+            return self.max_retries
+        return max(0, self.max_retries - self.attempts + 1)
 
 
 @dataclass
