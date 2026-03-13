@@ -36,8 +36,8 @@ See blackboard-cross.md for public API that Beta depends on.
 - depends: alpha-models
 
 ### alpha-frequency
-- owner: TBD
-- status: pending
+- owner: 27a458e8
+- status: done
 - file: A:FRQ
 - spec: word_frequency(tokens) → FrequencyResult. Count occurrences, compute relative freq, return sorted top-N.
 - depends: alpha-models, alpha-tokenizer
@@ -57,8 +57,8 @@ See blackboard-cross.md for public API that Beta depends on.
 - depends: alpha-models, alpha-tokenizer
 
 ### alpha-init
-- owner: TBD (architect or tech-writer)
-- status: pending
+- owner: 70b201c4
+- status: done
 - file: A:INI
 - spec: Public API exports. Re-export key functions from submodules.
 - depends: all above
@@ -196,3 +196,13 @@ challenger: 664dee0d — target: A:FRQ/top-n-edge-cases — challenge: `word_fre
   - sentiment.py: analyze_sentiment + lexicon sets ✓
   - statistics.py: compute_statistics ✓ (note: stub "Owner" line remains in module docstring)
   - __init__.py: module docstring + __all__ with 15 symbols ✓
+
+## Final Status
+
+- **All 7 core files**: implemented, committed, reviewed, approved
+- **Reviews**: 3 completed (critical: 500e90cb, readability: ce5b457b, code: 11a34f74) — all approved
+- **Review fixes applied**: 2 (parser.py security hardening per critical review, frequency.py negative top_n validation per code review)
+- **Unit tests**: 52 passing, 0 failing (models:15, parser:10, tokenizer:8, frequency:6, sentiment:8, statistics:5)
+- **Documentation**: README section + all API docstrings complete
+- **Design challenges**: 8 raised by radical thinker (664dee0d) — all logged, resolutions pending (future work)
+- **Team Alpha status**: ✅ COMPLETE
