@@ -118,3 +118,22 @@ class TestMainErrorHandling:
         code = main(["analyze", "dummy.txt"])
         assert code == 2
         assert "unknown error" in capsys.readouterr().err
+
+    @patch("textanalyzer.cli.main.generate_html_report")
+    @patch("textanalyzer.cli.main.run_analysis")
+    def test_io_error_returns_3(self, mock_run, mock_html, capsys):
+        mock_run.return_value = MagicMock()
+        mock_html.side_effect = OSError("Permission denied")
+        code = main(["analyze", "dummy.txt", "--format", "html"])
+        assert code == 3
+        assert "Permission denied" in capsys.readouterr().err
+
+    @patch("textanalyzer.cli.main.format_text")
+    @patch("textanalyzer.cli.main.run_analysis")
+    def test_format_error_inside_try(self, mock_run, mock_fmt, capsys):
+        """Formatting errors (e.g. broken results) are caught, not raw tracebacks."""
+        mock_run.return_value = MagicMock()
+        mock_fmt.side_effect = OSError("Broken pipe")
+        code = main(["analyze", "dummy.txt", "--format", "text"])
+        assert code == 3
+        assert "Broken pipe" in capsys.readouterr().err

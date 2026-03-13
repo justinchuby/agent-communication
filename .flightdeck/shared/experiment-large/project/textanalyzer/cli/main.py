@@ -3,7 +3,7 @@
 Provides the ``textanalyzer analyze`` command which runs the full text
 analysis pipeline and outputs results in text, JSON, or HTML format.
 
-Exit codes: 0 = success, 1 = file not found, 2 = parse/analysis error.
+Exit codes: 0 = success, 1 = file not found, 2 = parse/analysis error, 3 = output error.
 """
 
 import argparse
@@ -27,7 +27,8 @@ def main(argv: list[str] | None = None) -> int:
         argv: Command-line arguments. Uses ``sys.argv[1:]`` when *None*.
 
     Returns:
-        Exit code: 0 on success, 1 for file-not-found, 2 for other errors.
+        Exit code: 0 on success, 1 for file-not-found, 2 for parse/analysis
+        errors, 3 for output I/O errors.
     """
     parser = argparse.ArgumentParser(
         prog="textanalyzer",
@@ -76,20 +77,23 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         results = run_analysis(args.file, options)
+
+        if args.format == "text":
+            print(format_text(results))
+        elif args.format == "json":
+            print(format_json(results))
+        elif args.format == "html":
+            output_path = args.output or "report.html"
+            generate_html_report(results, output_path)
     except TAFileNotFoundError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
     except (ParseError, EmptyDocumentError, TextAnalyzerError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
-
-    if args.format == "text":
-        print(format_text(results))
-    elif args.format == "json":
-        print(format_json(results))
-    elif args.format == "html":
-        output_path = args.output or "report.html"
-        generate_html_report(results, output_path)
+    except (IOError, OSError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 3
 
     return 0
 
