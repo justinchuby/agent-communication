@@ -79,7 +79,10 @@ class URLShortener:
 
         existing = self._storage.get_by_url(url)
         if existing is not None:
-            return existing.code
+            if existing.expires_at is None or datetime.now(timezone.utc) < existing.expires_at:
+                return existing.code
+            # Expired — delete stale record and re-create below
+            self._storage.delete(existing.code)
 
         code = self._unique_code(url)
 
@@ -146,10 +149,13 @@ class URLShortener:
         """Generate a code that is not yet present in storage.
 
         Uses incrementing attempt counter for collision resolution.
+        Raises RuntimeError after 1000 failed attempts as a safety guard.
         """
-        attempt = 0
-        while True:
+        max_attempts = 1000
+        for attempt in range(max_attempts):
             code = _generate_code(url, self._code_length, attempt)
             if self._storage.get_by_code(code) is None:
                 return code
-            attempt += 1
+        raise RuntimeError(
+            f"Failed to generate a unique code after {max_attempts} attempts"
+        )
