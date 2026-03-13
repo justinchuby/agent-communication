@@ -1,0 +1,23 @@
+{
+  "condition": "E",
+  "task_success": true,
+  "start_time": 1710360000.0,
+  "end_time": 1710360035.0,
+  "messages": [
+    {
+      "role": "lead",
+      "to": "investigator",
+      "content": "{\"i\": \"inv\", \"ref\": \"ctx:a3f7b2\", \"err\": \"5F:AttrErr:str.score@proc:27\"}"
+    },
+    {
+      "role": "investigator",
+      "to": "blackboard",
+      "content": "{\"i\": \"bb.w\", \"p\": \"bug/tf001\", \"rc\": \"type_mismatch:ctx:e9c1d4→ctx:b8a2f1\", \"fix\": \"proc:26 s/$$0:/$$0.items():/\"}"
+    },
+    {
+      "role": "fixer",
+      "to": "blackboard",
+      "content": "{\"i\": \"bb.w\", \"p\": \"bug/tf001/fix\", \"applied\": \"ref:fix:7d3e9a\", \"v\": \"13/13\"}"
+    }
+  ]
+}
