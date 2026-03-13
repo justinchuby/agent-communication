@@ -140,7 +140,8 @@ class Task:
     @property
     def retries_remaining(self) -> int:
         """How many retry attempts are left."""
-        return max(0, self.max_retries - self.attempts + 1) if self.attempts > 0 else self.max_retries
+        used_retries = max(0, self.attempts - 1)
+        return max(0, self.max_retries - used_retries)
 
     def transition_to(self, new_status: TaskStatus) -> None:
         """Transition to a new status, enforcing the state machine rules.
@@ -160,11 +161,14 @@ class Task:
         if self.started_at is not None:
             end = self.completed_at if self.completed_at is not None else time.monotonic()
             duration = end - self.started_at
+        error = self.error
+        if self.status == TaskStatus.CANCELLED and error is None:
+            error = "Task was cancelled"
         return TaskResult(
             task_id=self.id,
             success=self.status == TaskStatus.SUCCESS,
             result=self.result,
-            error=self.error,
+            error=error,
             duration=duration,
             attempts=self.attempts,
         )
