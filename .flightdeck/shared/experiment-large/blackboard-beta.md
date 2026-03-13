@@ -43,8 +43,8 @@ See blackboard-cross.md for Alpha's public API this team consumes.
 - depends: cross-team API contract, all alpha modules
 
 ### beta-init
-- owner: TBD (architect or tech-writer)
-- status: pending
+- owner: bdf6a559
+- status: done
 - file: B:INI
 - spec: Public API exports for CLI package.
 - depends: all above
