@@ -77,5 +77,12 @@ def format_text(results: AnalysisResults) -> str:
 
 
 def format_json(results: AnalysisResults) -> str:
-    """Format analysis results as pretty-printed JSON with all fields."""
-    return json.dumps(asdict(results), indent=2)
+    """Format analysis results as pretty-printed JSON.
+
+    Excludes the raw tokens list to avoid memory issues on large files.
+    Includes token_count as a summary instead.
+    """
+    data = asdict(results)
+    data["token_count"] = len(results.tokens)
+    del data["tokens"]
+    return json.dumps(data, indent=2)
