@@ -29,8 +29,8 @@ See blackboard-cross.md for Alpha's public API this team consumes.
 - depends: cross-team API contract, alpha-models (for result types)
 
 ### beta-html-report
-- owner: TBD
-- status: pending
+- owner: 5f324035
+- status: done
 - file: B:HTM
 - spec: generate_html_report(results, output_path) → None. Self-contained HTML with inline CSS. Sections: summary stats, word frequency bar chart (CSS-only), sentiment gauge, top words table.
 - depends: cross-team API contract, alpha-models
