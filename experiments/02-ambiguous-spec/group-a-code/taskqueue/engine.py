@@ -28,6 +28,13 @@ from taskqueue.models import (
 
 logger = logging.getLogger(__name__)
 
+# Informational error messages for get_result() on non-terminal tasks
+_STATUS_MESSAGES: dict[TaskStatus, str] = {
+    TaskStatus.PENDING: "Task is pending",
+    TaskStatus.RUNNING: "Task is still running",
+    TaskStatus.RETRYING: "Task is retrying",
+}
+
 
 class TaskQueue:
     """Priority-based task queue with retry, timeout, and concurrency support.
@@ -133,16 +140,10 @@ class TaskQueue:
         with self._lock:
             if task.is_terminal:
                 return task.to_result()
-            # Non-terminal: provide informational error messages
-            _status_messages = {
-                TaskStatus.PENDING: "Task is pending",
-                TaskStatus.RUNNING: "Task is still running",
-                TaskStatus.RETRYING: "Task is retrying",
-            }
             return TaskResult(
                 task_id=task.id,
                 success=False,
-                error=_status_messages.get(task.status, f"Task is {task.status.value}"),
+                error=_STATUS_MESSAGES.get(task.status, f"Task is {task.status.value}"),
                 duration=0.0,
                 attempts=task.attempts,
             )
@@ -292,7 +293,7 @@ class TaskQueue:
         worker_thread.start()
         try:
             return inner_future.result(timeout=task.timeout)
-        except TimeoutError:
+        except (TimeoutError, FutureTimeoutError):
             raise FutureTimeoutError(f"Task timed out after {task.timeout}s")
 
     def _handle_failure(self, task: Task, error_msg: str) -> None:
