@@ -15,8 +15,8 @@ See blackboard-cross.md for Alpha's public API this team consumes.
 ## Tasks
 
 ### beta-cli
-- owner: TBD
-- status: pending
+- owner: 3f44f031
+- status: done
 - file: B:CLI
 - spec: argparse CLI entry point. Commands: `analyze <file>`, `analyze --format json|text|html`, `analyze --top-n 10`, `analyze --no-sentiment`. Exit codes: 0=success, 1=file-not-found, 2=parse-error.
 - depends: cross-team API contract
