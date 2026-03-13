@@ -39,6 +39,8 @@ def word_frequency(
     sorted_items = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
 
     if top_n is not None:
+        if top_n < 0:
+            raise ValueError("top_n must be non-negative")
         sorted_items = sorted_items[:top_n]
 
     frequencies = dict(sorted_items)
