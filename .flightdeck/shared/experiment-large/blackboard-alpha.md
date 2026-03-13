@@ -29,8 +29,8 @@ See blackboard-cross.md for public API that Beta depends on.
 - depends: alpha-models
 
 ### alpha-tokenizer
-- owner: TBD
-- status: pending
+- owner: 5d691eb9
+- status: done
 - file: A:TOK
 - spec: tokenize(doc) → list[Token]. Split on whitespace/punctuation, lowercase, strip. Configurable stop-word removal.
 - depends: alpha-models
