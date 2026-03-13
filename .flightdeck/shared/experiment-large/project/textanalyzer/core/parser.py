@@ -17,6 +17,8 @@ from textanalyzer.core.models import (
     TextDocument,
 )
 
+MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB default limit
+
 
 def _strip_control_characters(text: str) -> str:
     """Remove control characters from *text*, preserving newlines."""
@@ -24,6 +26,16 @@ def _strip_control_characters(text: str) -> str:
         ch for ch in text
         if ch == "\n" or unicodedata.category(ch)[0] != "C"
     )
+
+
+def _validate_path(path: str) -> str:
+    """Resolve *path* and reject traversal attempts containing ``..``."""
+    resolved = os.path.realpath(path)
+    if ".." in os.path.normpath(path).split(os.sep):
+        raise ParseError(
+            f"Path traversal detected — refusing to open: {path}"
+        )
+    return resolved
 
 
 def parse_string(text: str, source: str = "<string>") -> TextDocument:
@@ -53,29 +65,44 @@ def parse_string(text: str, source: str = "<string>") -> TextDocument:
     )
 
 
-def parse_file(path: str) -> TextDocument:
+def parse_file(
+    path: str,
+    *,
+    max_size: int = MAX_FILE_SIZE_BYTES,
+) -> TextDocument:
     """Read a UTF-8 file and return a ``TextDocument``.
 
     Parameters
     ----------
     path:
         Filesystem path to the text file.
+    max_size:
+        Maximum allowed file size in bytes (default 10 MB).
 
     Raises
     ------
     FileNotFoundError
         If *path* does not exist.
     ParseError
-        If the file cannot be decoded as UTF-8.
+        If the file cannot be decoded as UTF-8, contains path traversal,
+        exceeds *max_size*, or cannot be read due to permission errors.
     EmptyDocumentError
         If the file content is empty after stripping control characters.
     """
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"File not found: {path}")
+    resolved = _validate_path(path)
 
     try:
-        with open(path, encoding="utf-8") as fh:
+        size = os.path.getsize(resolved)
+        if size > max_size:
+            raise ParseError(
+                f"File too large ({size} bytes, limit {max_size}): {path}"
+            )
+        with open(resolved, encoding="utf-8") as fh:
             raw = fh.read()
+    except OSError as exc:
+        if not os.path.exists(resolved):
+            raise FileNotFoundError(f"File not found: {path}") from exc
+        raise ParseError(f"Cannot read {path}: {exc}") from exc
     except UnicodeDecodeError as exc:
         raise ParseError(f"Cannot decode {path} as UTF-8: {exc}") from exc
 
