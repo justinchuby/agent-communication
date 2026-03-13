@@ -64,8 +64,8 @@ See blackboard-cross.md for public API that Beta depends on.
 - depends: all above
 
 ### alpha-unit-tests
-- owner: TBD (QA)
-- status: pending
+- owner: 9174b332
+- status: done
 - file: T:U.core
 - spec: Unit tests for each core module. ≥3 tests per module.
 - depends: all implementations
@@ -75,6 +75,8 @@ Format: `file: REF — reviewer: agent-id — verdict: approved|changes_needed �
 
 ## Test Results
 Format: `suite: name — tester: agent-id — result: pass(N)/fail(N) — details: string`
+
+suite: unit/core — tester: 9174b332 — result: pass(52)/fail(0) — details: test_models(15) test_parser(10) test_tokenizer(8) test_frequency(6) test_sentiment(8) test_statistics(5)
 
 ## Design Challenges
 Format: `challenger: agent-id — target: REF/decision — challenge: string — resolution: string`
