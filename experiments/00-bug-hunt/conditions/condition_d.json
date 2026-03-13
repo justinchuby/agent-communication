@@ -1,0 +1,28 @@
+{
+  "condition": "D",
+  "task_success": true,
+  "start_time": 1710360000.0,
+  "end_time": 1710360050.0,
+  "messages": [
+    {
+      "role": "lead",
+      "to": "investigator",
+      "content": "{\"i\": \"inv\", \"t\": \"test_pipeline.py\", \"bb\": \"bug/tf001\", \"err\": \"5F:AttrErr:str.score@proc:27\"}"
+    },
+    {
+      "role": "investigator",
+      "to": "blackboard",
+      "content": "{\"i\": \"bb.w\", \"p\": \"bug/tf001\", \"d\": {\"rc\": \"proc.py:26 iter(dict) not .items() — dl.py refactored list->dict, proc missed\", \"fix\": \"proc:26 s/user_records:/user_records.items():/\"}}"
+    },
+    {
+      "role": "fixer",
+      "to": "blackboard",
+      "content": "{\"i\": \"bb.w\", \"p\": \"bug/tf001/fix\", \"d\": {\"s\": \"applied\", \"v\": \"13/13 pass\"}}"
+    },
+    {
+      "role": "reviewer",
+      "to": "blackboard",
+      "content": "{\"i\": \"bb.w\", \"p\": \"bug/tf001/rv\", \"d\": {\"v\": \"approved\"}}"
+    }
+  ]
+}
