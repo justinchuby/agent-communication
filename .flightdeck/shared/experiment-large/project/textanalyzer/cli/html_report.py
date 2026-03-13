@@ -212,18 +212,21 @@ def _build_sentiment_section(sentiment) -> str:
     )
 
 
-def _build_frequency_table(frequencies: dict[str, int]) -> str:
+def _build_frequency_table(
+    frequencies: dict[str, int],
+    relative_frequencies: dict[str, float],
+) -> str:
     """Build the full frequency table.
 
     Args:
         frequencies: Word-to-count mapping, assumed sorted descending.
+        relative_frequencies: Word-to-relative-frequency (count/total_tokens).
     """
     if not frequencies:
         return ""
-    total = sum(frequencies.values())
     rows = []
     for rank, (word, count) in enumerate(frequencies.items(), start=1):
-        rel_freq = (count / total * 100) if total > 0 else 0.0
+        rel_freq = relative_frequencies.get(word, 0.0) * 100
         rows.append(
             f"<tr><td>{rank}</td>"
             f"<td>{_escape_html(word)}</td>"
@@ -259,7 +262,10 @@ def generate_html_report(results: AnalysisResults, output_path: str) -> None:
         _build_stats_card(results.statistics),
         _build_bar_chart(results.frequency.frequencies, top_n=20),
         _build_sentiment_section(results.sentiment),
-        _build_frequency_table(results.frequency.frequencies),
+        _build_frequency_table(
+            results.frequency.frequencies,
+            results.frequency.relative_frequencies,
+        ),
     ]
 
     html = (
