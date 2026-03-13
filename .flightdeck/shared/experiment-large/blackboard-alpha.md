@@ -73,6 +73,67 @@ See blackboard-cross.md for public API that Beta depends on.
 ## Reviews
 Format: `file: REF — reviewer: agent-id — verdict: approved|changes_needed — notes: string`
 
+### Critical Review — reviewer: 500e90cb — verdict: changes_needed
+
+**Scope**: architecture coherence, security, performance, error propagation, type safety across all 6 core files.
+
+**CRITICAL — parser.py: No path traversal protection (security)**
+`parse_file(path)` accepts arbitrary paths with zero validation. No `os.path.realpath()`, no directory sandboxing, no symlink check. If exposed to user input (CLI, web API), attacker reads `/etc/shadow`, `../../secrets.env`, etc. Fix: document the risk prominently OR add optional `allowed_dir` param with `os.path.commonpath` check.
+
+**CRITICAL — parser.py: Unbounded file read (performance/DoS)**
+Line 78: `fh.read()` loads entire file into memory. A 2GB file OOMs the process. `_strip_control_characters` then iterates char-by-char creating a second copy. Fix: add `MAX_FILE_SIZE` constant (e.g., 50MB), check `os.path.getsize()` before read, raise `ParseError` if exceeded.
+
+**HIGH — parser.py: PermissionError not caught (error contract)**
+`open()` can raise `PermissionError`/`IsADirectoryError` — neither is caught or wrapped in `TextAnalyzerError`. Breaks the error hierarchy contract. Beta team code catching `TextAnalyzerError` will miss these. Fix: add `except OSError as exc: raise ParseError(...)` catch.
+
+**HIGH — parser.py: TOCTOU race condition**
+Lines 73-77: `os.path.exists()` then `open()` — file can be deleted between check and open, raising builtin `FileNotFoundError` (not the custom one). Fix: remove `os.path.exists()` check, use try/except on `open()` catching `builtins.FileNotFoundError` and re-raising as custom `FileNotFoundError`.
+
+**MEDIUM — models.py: FileNotFoundError shadows builtin**
+Line 74: Custom `FileNotFoundError(TextAnalyzerError)` shadows `builtins.FileNotFoundError`. Any downstream `except FileNotFoundError` becomes ambiguous. Contract specifies this, so accepted with caveat: parser.py must handle the builtin carefully (currently broken due to TOCTOU above).
+
+**LOW — frequency.py: Stub docstring not updated**
+Lines 1-14 still contain original "Owner: Team Alpha developer" stub text with TODO instructions. Implementation is complete but docstring is stale.
+
+**LOW — statistics.py: Stub docstring not updated**
+Same issue — lines 1-16 still contain original stub text.
+
+**GOOD DECISIONS (acknowledged)**
+- ✓ Architecture coherence: clean unidirectional pipeline (parse→tokenize→analyze). Single responsibility per module. All modules depend only on models.py — no circular deps.
+- ✓ Contract compliance: all 6 function signatures match blackboard-cross.md exactly.
+- ✓ frequency.py: stable sort with alphabetical tiebreak prevents nondeterministic output.
+- ✓ sentiment.py: clean edge-case handling for empty token lists, correct score clamping.
+- ✓ statistics.py: `SENTENCE_ENDINGS` as frozenset — immutable, O(1) lookup.
+- ✓ parser.py: delegation from `parse_file` to `parse_string` avoids duplication.
+- ✓ tokenizer.py: module-level compiled regex for performance.
+
+**Summary**: 2 CRITICAL (path traversal, unbounded read), 2 HIGH (PermissionError gap, TOCTOU race) — all in parser.py. The remaining 4 modules are architecturally sound. Parser needs a security/resilience pass before this library is safe for production use.
+
+### Readability Review — reviewer: ce5b457b — verdict: approved — scope: all 6 core files
+
+**Overall: CLEAN.** Code is readable, well-structured, and a new developer could understand it quickly. Naming is clear throughout, organization is logical, PEP 8 is followed. API contract match is exact. Approving with suggestions below.
+
+**Praise:**
+- models.py: Exemplary — inline field comments (`# -1.0 to 1.0`, `# word → count, sorted desc`) explain constraints concisely. Section separators between models and errors aid scanning.
+- parser.py: Best docstrings in the project — NumPy-style with Parameters/Raises. Private `_strip_control_characters` helper is well-named and correctly prefixed.
+- sentiment.py: Early return for empty-token edge case is clean. `raw_score` → clamp → label flow reads naturally.
+- statistics.py: `SENTENCE_ENDINGS = frozenset(...)` is good — communicates immutability intent.
+- tokenizer.py: Public API summary in module docstring is helpful for discoverability.
+
+**Findings (non-blocking):**
+
+1. **STALE MODULE DOCSTRINGS — frequency.py, statistics.py**: Still contain stub text (`Owner: Team Alpha developer`, `Implement:` spec instructions). The other 4 files updated theirs. These read as unfinished work. Replace with descriptive docstrings matching the pattern in sentiment.py/tokenizer.py.
+
+2. **DOCSTRING STYLE INCONSISTENCY**: parser.py uses NumPy-style (Parameters/Raises with `------` underlines). All other files use Google-style (Args/Returns). Pick one — Google-style is the majority, so parser.py is the outlier. Suggest standardizing to Google-style.
+
+3. **VARIABLE NAMING INCONSISTENCY across modules**: `non_stopword` (frequency.py:33) vs `non_stopword_tokens` (sentiment.py:44). The longer name is clearer. Suggest standardizing to `non_stopword_tokens` in both.
+
+4. **SHADOW BUILTIN — no explanatory comment**: models.py defines `FileNotFoundError` shadowing Python's built-in. The original stub noted this was intentional but the comment was dropped. Add `# Intentionally shadows built-in; caught via TextAnalyzerError hierarchy` or similar. (Agrees with @664dee0d's design challenge on this — readability angle: at minimum, document the intent.)
+
+5. **SENTIMENT NEGATION — docstring gap**: `analyze_sentiment()` doesn't warn users that negation is ignored ("not good" → positive). Add a one-line Note/Warning in the docstring: `Note: Lexicon-only; negation and context are not handled.` (Agrees with @664dee0d's challenge — readability angle: set expectations.)
+
+**Summary:** 5 non-blocking suggestions, 0 blocking issues. Code is approved for readability.
+
 ## Test Results
 Format: `suite: name — tester: agent-id — result: pass(N)/fail(N) — details: string`
 
