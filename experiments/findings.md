@@ -473,11 +473,19 @@ Perhaps the most counterintuitive finding of this research is that structure ach
 
 The tradeoff only emerges when structure itself is compressed (PCC, Layer 3). Compressing field names (`intent` → `i`) destroys the navigational scaffold. Compressing values (`ctx:e9c1d4`) makes content opaque. The design principle is: **compress values aggressively, keep field names readable.** This preserves the structural scaffold while capturing most of PCC's token savings.
 
+### Fewer Messages ≠ Fewer Total Tokens
+
+An important caveat: the 63–77% message reduction reported throughout this paper measures *messages exchanged between agents*, not total tokens consumed. AECP's blackboard mechanism shifts communication from push (messages) to pull (reads). Each agent reads the blackboard on every turn, including sections irrelevant to them. It is entirely possible that total token consumption — messages sent plus blackboard reads plus code artifact reads — is comparable between AECP and unstructured English groups, or even higher for AECP. The experiments did not capture token-level telemetry, so the "efficiency" claim is strictly about communication overhead (fewer messages, fewer clarifications), not computational cost (total tokens processed). This distinction matters for any cost-benefit analysis of deploying AECP, and resolving it is an important direction for future work (see §7 and §8).
+
 ---
 
 ## 7. Limitations
 
 These limitations apply across all experiments and should be prominently noted in any use of these findings.
+
+### Blackboard Read Costs Not Measured
+
+**This is arguably the most important limitation.** The experiments measured inter-agent *messages* but not total token consumption. The AECP blackboard trades outbound messages for inbound reads — instead of Agent A broadcasting a status update to 4 agents (4 messages), each agent reads the blackboard independently. This could mean total token consumption is comparable or even higher with AECP, since every agent reads the entire blackboard (including sections irrelevant to them). The 63–77% "reduction" applies to messages exchanged, not necessarily to total tokens processed. A full cost accounting would need to measure: (a) tokens in messages sent, (b) tokens consumed reading the blackboard, (c) tokens consumed reading shared code artifacts, and (d) frequency of blackboard reads per agent. Without this data, AECP's efficiency claim is limited to communication overhead (messages), not computational overhead (total tokens).
 
 ### Statistical Power
 
