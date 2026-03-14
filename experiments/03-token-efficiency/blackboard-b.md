@@ -130,11 +130,16 @@ contract_status: done
 | design | — | architect | done | all 8 ambiguities resolved, interface in types.py |
 | types | types.py | dev-a | done | added __post_init__ priority validation |
 | pkg-init | __init__.py | dev-a | done | exports all types + errors; lazy-imports EventEmitter |
-| emitter | emitter.py | dev-b | ready | EventEmitter core logic |
-| review | all | reviewer | blocked(impl) | |
-| tests | test_emitter.py | tester | blocked(review) | |
+| emitter | emitter.py | dev-b | done | EventEmitter: on/once/off/emit, priority, wildcard, errors |
+| review | all | reviewer | done(pass) | 0 bugs, 2 minor notes |
+| tests | test_emitter.py | tester | done(pass) | 18/18 passed in 0.03s |
 
 ## Findings
+### N-1: __init__.py uses absolute imports (trivial)
+__init__.py uses `from eventemitter.types` (absolute); emitter.py uses `from .types` (relative). Inconsistent but functional.
+
+### N-2: error_handler exceptions unhandled (minor, edge case)
+If `error_handler` itself raises, exception propagates without once-listener cleanup. Blackboard doesn't specify this case.
 
 
 ## Metrics
