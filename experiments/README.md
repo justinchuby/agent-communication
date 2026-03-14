@@ -10,29 +10,30 @@ Controlled experiments testing the Agent-Efficient Communication Protocol.
 | 00b | 30-Agent Scale | Scalability test | 28 | 50 msgs for 28 agents (1.79/agent) |
 | 01 | URL Shortener A/B | Controlled A/B | 10 | 77% message reduction, equal quality |
 | 02 | Ambiguous Spec A/B | Controlled A/B | 10 | 100% clarification reduction, ~63-74% message reduction |
-| 03 | Token Efficiency A/B/C | Controlled A/B/C | 15 | Message reduction overstates token savings by 3-15×; AECP v2 saves 22% |
+| 03 | Token Efficiency A/B/C/D | Controlled A/B/C/D | 20 | Message reduction overstates token savings by 3-15×; AECP v2 saves 22%; 文言文 costs 18.5% MORE |
 
-## Experiment 03: Token Efficiency A/B/C Test
+## Experiment 03: Token Efficiency A/B/C/D Test
 
-**Task:** TypeScript event emitter library (8 embedded ambiguities)  
+**Task:** Python event emitter library (8 embedded ambiguities)  
 **Purpose:** Measure actual token costs — test whether message reduction translates to token reduction  
-**Groups:** 3 groups of 5 agents (English, AECP v1 monolithic, AECP v2 scoped views)  
-**Protocol:** Group A = natural English, Group B = AECP v1 (full blackboard per message), Group C = AECP v2 (scoped views)
+**Groups:** 4 groups of 5 agents (English, AECP v1 monolithic, AECP v2 scoped views, 文言文 blackboard)  
+**Protocol:** Group A = natural English, Group B = AECP v1 (full blackboard per message), Group C = AECP v2 (scoped views), Group D = AECP v1 with 文言文 blackboard
 
 ### Results
 
-| Metric | Group A (English) | Group B (AECP v1) | Group C (AECP v2) |
-|--------|-------------------|--------------------|--------------------|
-| Tests passing | 18/18 | 18/18 | 18/18 |
-| Messages | 12 | ~5 | ~5 |
-| Token savings vs English | — | ~5% | ~22% |
+| Metric | Group A (English) | Group B (AECP v1) | Group C (AECP v2) | Group D (文言文) |
+|--------|-------------------|--------------------|--------------------|------------------|
+| Tests passing | 18/18 | 18/18 | 18/18 | 18/18 |
+| Messages | 12 | ~5 | ~5 | ~5 |
+| Token savings vs English | — | ~5% | ~22% | −18.5% (more expensive) |
 
 ### Key Findings
 
 - **Message reduction ≠ token reduction:** AECP v1 cut messages by ~58% but only saved ~5% on tokens — structured payloads with full blackboard context are heavier per-message
 - **Scoped views fix the overhead:** AECP v2 delivers each agent only the blackboard slice they need, achieving 22% real token savings
+- **文言文 costs MORE:** Despite 51% character reduction, CJK tokenization (2.26 tokens/char in cl100k_base) reverses the density advantage — Group D costs 18.5% more than English
 - **Message reduction overstated efficiency by 3–15×** across prior experiments
-- **Equal quality across all three groups:** 18/18 tests passing in every group
+- **Equal quality across all four groups:** 18/18 tests passing in every group
 
 **Artifacts:** [`experiments/03-token-efficiency/`](03-token-efficiency/)
 

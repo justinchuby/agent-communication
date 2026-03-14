@@ -10,7 +10,7 @@ A research project investigating structured communication protocols for AI agent
 | 30-Agent Scale | 28 | AECP only | 50 total (1.79/agent) | N/A | N/A | 96/96 |
 | URL Shortener A/B | 5 vs 5 | English vs AECP | 22 vs 5 | 77% | 0 : 0 | 18 : 18 |
 | Ambiguous Spec A/B | 5 vs 5 | English vs AECP | ~19 vs ~5–7 | 63–74% | 12 : 0 | 21 : 18 |
-| Token Efficiency A/B/C | 5 × 3 | English vs AECP v1 vs AECP v2 | 12 vs ~5 vs ~5 | 5% (v1), 22% (v2) | N/A | 18 : 18 : 18 |
+| Token Efficiency A/B/C/D | 5 × 4 | English vs AECP v1 vs AECP v2 vs 文言文 | 12 vs ~5 vs ~5 vs ~5 | 5% (v1), 22% (v2), −18.5% (文言文) | N/A | 18 : 18 : 18 : 18 |
 
 ## Quick Start
 
@@ -45,8 +45,8 @@ Controlled experiment: 5 agents using English vs 5 agents using AECP, building t
 5 vs 5 agents implementing a task queue from a deliberately ambiguous specification (9 planted ambiguities). English group needed 12 clarification messages; AECP group needed 0. Both produced working code.
 → [`experiments/02-ambiguous-spec/`](experiments/02-ambiguous-spec/)
 
-### 03 — Token Efficiency A/B/C Test
-3 groups of 5 agents building an event emitter library (8 planted ambiguities). Measured actual token costs, not just message counts. AECP v1 (monolithic context) barely broke even at −5% tokens despite 58% fewer messages; AECP v2 (scoped views) saved 22%. Message reduction overstated true efficiency by 3–15×.
+### 03 — Token Efficiency A/B/C/D Test
+3 groups of 5 agents building an event emitter library (8 planted ambiguities). Measured actual token costs, not just message counts. AECP v1 (monolithic context) barely broke even at −5% tokens despite 58% fewer messages; AECP v2 (scoped views) saved 22%. Group D tested 文言文 (Classical Chinese) blackboard prose — despite 51% character reduction, CJK tokenization costs 18.5% MORE tokens than English. Message reduction overstated true efficiency by 3–15×.
 → [`experiments/03-token-efficiency/`](experiments/03-token-efficiency/)
 
 ## Key Findings
@@ -119,8 +119,9 @@ Controlled experiment: 5 agents using English vs 5 agents using AECP, building t
 │   ├── 02-ambiguous-spec/             # Ambiguous Spec A/B (12 vs 0 clarifications)
 │   │   ├── group-a-code/              # English group's task queue (21 tests)
 │   │   └── group-b-code/              # AECP group's task queue (18 tests)
-│   └── 03-token-efficiency/           # Token Efficiency A/B/C (message ≠ token savings)
+│   └── 03-token-efficiency/           # Token Efficiency A/B/C/D (message ≠ token savings)
 │       ├── group-a-code/              # English group's event emitter (18 tests)
 │       ├── group-b-code/              # AECP v1 group's event emitter (18 tests)
-│       └── group-c-code/              # AECP v2 group's event emitter (18 tests)
+│       ├── group-c-code/              # AECP v2 group's event emitter (18 tests)
+│       └── group-d-code/              # 文言文 group's event emitter (18 tests)
 ```

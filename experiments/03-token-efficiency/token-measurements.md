@@ -398,3 +398,188 @@ BB savings (C/B)        —               —           55.7%
 ```
 
 **Bottom line:** At 12 English messages, AECP v1 barely breaks even on total tokens. AECP v2 (scoped views + deltas) achieves a 22% reduction vs English and 18% vs AECP v1. The real payoff comes with longer conversations (≥15 messages) and iterative workflows (≥2 re-reads/agent), where the quadratic message-context cost and linear BB-reread cost diverge sharply.
+
+---
+
+## Group D (文言文) Token Analysis
+
+**Date:** 2025-07-15
+**Method:** tiktoken `cl100k_base` exact counts (the word × 1.3 heuristic doesn't apply to CJK text)
+
+### Why tiktoken instead of the word × 1.3 heuristic?
+
+The heuristic used in sections 1–10 above breaks down for Chinese text:
+- `wc -w` undercounts Chinese (no spaces between characters): blackboard-d.md reports 310 "words" but contains 499 CJK characters plus code blocks.
+- CJK characters are tokenized at ~2.26 tokens/char in cl100k_base (each character → 2–3 byte-pair tokens), far higher than the ~1.3 tokens/word rate for English.
+- To ensure a fair comparison, **this section uses tiktoken for both Group D and Group B**.
+
+Note: Sections 1–10 used `words × 1.3` for Groups A/B/C. For Group B, tiktoken gives higher totals (e.g., BB: 1,301 tokens vs heuristic 887) because code blocks have a higher token/word ratio. The relative rankings and findings hold; absolute numbers differ.
+
+### D.1 Raw Measurements
+
+#### Blackboard Character Composition
+
+| Metric | Group D (文言文) | Group B (English) |
+|--------|------------------:|-------------------:|
+| `wc -w` (words) | 310 | 682 |
+| `wc -m` (chars) | 2,620 | 5,397 |
+| CJK characters | 536 | 0 |
+| ASCII characters | 1,535 | 4,456 |
+| Whitespace | 433 | 936 |
+| CJK punctuation | 116 | 4 |
+
+文言文 achieves **51.5% fewer total characters** (2,620 vs 5,397) and **21.5% fewer non-whitespace characters** (2,187 vs 4,461). The character-level compression is real — but it doesn't survive tokenization.
+
+#### Blackboard Token Breakdown (tiktoken cl100k_base)
+
+| Section | Group D tokens | Group B tokens |
+|---------|---------------:|---------------:|
+| Prose sections | 1,126 | — |
+| Code block (Python contract) | 381 | — |
+| **Full blackboard** | **1,512** | **1,301** |
+
+The code block (Python interface contract) is nearly identical across groups — code is code. The CJK prose is where the overhead lives: 499 CJK characters → 1,126 tokens (2.26 tokens/char).
+
+#### Heuristic Accuracy Check
+
+| Heuristic | Estimate | Actual | Accuracy |
+|-----------|:--------:|:------:|:--------:|
+| D: CJK chars × 2 + English words × 1.3 | 1,297 | 1,512 | 85.8% |
+| B: words × 1.3 | 887 | 1,301 | 68.1% |
+
+The CJK-aware heuristic is more accurate than the naive word × 1.3, but both undercount. The word × 1.3 heuristic is particularly poor for files with code blocks (symbols and operators are undertokenized by word count).
+
+### D.2 System Prompt Tokens
+
+| Component | Group D | Group B |
+|-----------|--------:|--------:|
+| Rules file | 699 | 297 |
+| Task description (shared) | 481 | 481 |
+| Per-agent total | 1,180 | 778 |
+| **× 5 agents = T_sys** | **5,900** | **3,890** |
+
+Group D's rules file is **2.4× larger** (699 vs 297 tokens) because it includes bilingual signal tables (文言文 ↔ English mappings) that Group B doesn't need. This is a structural overhead of using a non-default language — the protocol must explain its own conventions.
+
+### D.3 Structured Message Tokens
+
+| Signal | Group D (文言文) | Group B (English) |
+|--------|:----------------:|:-----------------:|
+| Done(design) | 畢(設計) → 7 | DONE(design) → 4 |
+| Done(types+init) | 畢(型與初) → 8 | DONE(types+init) → 5 |
+| Done(emitter) | 畢(發射器) → 9 | DONE(emitter) → 4 |
+| Verdict(pass) | 判(通) → 5 | VERDICT(pass) → 5 |
+| Verdict(tests, pass) | 判(試，通) → 8 | VERDICT(tests, pass) → 8 |
+| **T_msg_out** | **37** | **26** |
+
+文言文 signals are **42% more expensive** (37 vs 26 tokens) despite being fewer characters. Each CJK character burns 2+ tokens vs ~0.3 tokens per ASCII character in English keywords.
+
+#### Message Context Accumulation
+
+| Group | Avg tokens/msg | T_msg_ctx (5 msgs) |
+|-------|:--------------:|--------------------:|
+| D | 7.4 | 74 |
+| B | 5.2 | 52 |
+
+Both are negligible. Structured signals eliminate the quadratic context problem regardless of language.
+
+### D.4 Code File Tokens
+
+| File | Group D | Group B |
+|------|--------:|--------:|
+| `eventemitter/__init__.py` | 105 | 179 |
+| `eventemitter/emitter.py` | 1,088 | 1,304 |
+| `eventemitter/types.py` | 565 | 433 |
+| `tests/test_emitter.py` | 1,860 | 1,418 |
+| **Total (all files)** | **3,618** | **3,334** |
+
+Code is in Python for both groups — token differences come from implementation choices, not language. Group D's emitter.py is 17% smaller (1,088 vs 1,304) but test file is 31% larger (1,860 vs 1,418).
+
+#### Code Read Tokens (per workflow read pattern)
+
+| Agent reads | Group D | Group B |
+|-------------|--------:|--------:|
+| Dev B: types.py + \_\_init\_\_.py | 670 | 612 |
+| Reviewer: 3 impl files | 1,758 | 1,916 |
+| Tester: 3 impl files | 1,758 | 1,916 |
+| **T_code** | **4,186** | **4,444** |
+
+Group D code reads are **6% cheaper** — the implementation files happen to be slightly more compact.
+
+### D.5 Complete Cost Breakdown (tiktoken cl100k_base)
+
+| Category | Group D (文言文) | Group B (English) | D − B |
+|----------|------------------:|-------------------:|------:|
+| T_sys | 5,900 (26.5%) | 3,890 (20.7%) | +2,010 |
+| T_bb | 12,096 (54.3%) | 10,408 (55.3%) | +1,688 |
+| T_msg_out | 37 (0.2%) | 26 (0.1%) | +11 |
+| T_msg_ctx | 74 (0.3%) | 52 (0.3%) | +22 |
+| T_code | 4,186 (18.8%) | 4,444 (23.6%) | −258 |
+| **T_total** | **22,293** | **18,820** | **+3,473** |
+
+**D / B = 118.5% — Group D costs 18.5% MORE than Group B.**
+
+### D.6 Where the Overhead Comes From
+
+| Source | Extra tokens | % of total overhead |
+|--------|:------------:|:-------------------:|
+| System prompts (bilingual rules tables) | +2,010 | 57.9% |
+| Blackboard reads (CJK tokenization penalty) | +1,688 | 48.6% |
+| Code reads (slightly smaller impl) | −258 | −7.4% |
+| Messages (CJK signals) | +33 | 1.0% |
+| **Total overhead** | **+3,473** | **100%** |
+
+Two factors account for the entire overhead:
+1. **System prompt bloat (58%):** Group D's rules file is 2.4× Group B's because it must define bilingual signal/status tables. This is an artifact of running one group in a non-default language — the protocol overhead is paid once per agent but scales with team size.
+2. **CJK tokenization penalty (49%):** Despite 51% fewer characters, the 文言文 blackboard costs 16% more tokens. Each CJK character → 2.26 tokens in cl100k_base, while English averages ~1.3 tokens/word (with words averaging 4–5 characters). The byte-pair encoding vocabulary is English-centric.
+
+### D.7 CJK Tokenization Deep Dive
+
+| Metric | 文言文 prose | English equivalent |
+|--------|:------------:|:------------------:|
+| Characters (non-whitespace) | 499 CJK + markdown | ~4,400 ASCII |
+| Tokens | 1,126 | ~920 (prose portion) |
+| Tokens per content character | **2.26** | **~0.25** |
+| Compression ratio (chars → tokens) | 0.44× (expands) | 4.0× (compresses) |
+
+The fundamental asymmetry: English text **compresses** through tokenization (multiple characters → one token), while CJK text **expands** (one character → multiple tokens). cl100k_base's vocabulary contains ~100K tokens, dominated by English subwords and common English words. CJK characters are represented as individual byte sequences, not merged into common multi-character tokens.
+
+### D.8 Hypothesis Evaluation
+
+#### H10: 文言文 saves total tokens vs English → D < B
+
+| D total | B total | Ratio | Result |
+|--------:|--------:|------:|--------|
+| 22,293 | 18,820 | 118.5% | ❌ **NOT confirmed** — D is 18.5% MORE expensive |
+
+**Verdict:** The wenyanwen-analysis.md correctly predicted this outcome. Character-level density (51% fewer chars) cannot overcome the tokenizer penalty (2.26× expansion per CJK char) and protocol overhead (2.4× larger rules file). **文言文 is strictly worse than English for token efficiency with cl100k_base.**
+
+#### Could a CJK-optimized tokenizer change the result?
+
+If CJK characters were tokenized at 1.0 tokens/char (like a CJK-native tokenizer):
+- D blackboard: ~1,512 − (499 × 1.26 overhead) ≈ 883 tokens → **32% cheaper than B**
+- The crossover point is ~1.4 tokens/CJK char — below that, 文言文 wins
+
+This suggests 文言文 compression WOULD work with future multilingual-optimized tokenizers (e.g., if GPT-5 uses a vocabulary with better CJK coverage).
+
+### D.9 Summary
+
+```
+                    Group D         Group B         Δ
+                    (文言文)        (English)
+                    ─────────       ─────────       ─────────
+T_sys               5,900 (26.5%)   3,890 (20.7%)   +2,010
+T_bb               12,096 (54.3%)  10,408 (55.3%)   +1,688
+T_msg_out              37  (0.2%)      26  (0.1%)      +11
+T_msg_ctx              74  (0.3%)      52  (0.3%)      +22
+T_code              4,186 (18.8%)   4,444 (23.6%)     −258
+                    ─────────       ─────────       ─────────
+T_total            22,293          18,820           +3,473
+
+D / B ratio         118.5%
+BB: D / B           116.2%          (1,512 vs 1,301 per read)
+chars: D / B         48.5%          (2,620 vs 5,397 — compression is real)
+tokens/char: D       0.577          (tokens expand CJK)
+tokens/char: B       0.241          (tokens compress English)
+```
+
+**Bottom line:** 文言文 achieves impressive character-level compression (51% fewer chars) but cl100k_base's English-centric byte-pair vocabulary reverses the advantage at the token level. Group D costs 18.5% MORE than Group B. The tokenizer penalty (~2.26 tokens/CJK char) and bilingual protocol overhead (2.4× rules file) dominate. **For current LLM tokenizers, English remains the most token-efficient blackboard language.**

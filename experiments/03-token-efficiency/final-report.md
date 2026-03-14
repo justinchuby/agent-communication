@@ -80,3 +80,22 @@ This is the most important finding: the headline metric matters. Message reducti
 
 ## Conclusion
 The user asked: "reading the blackboard consumes tokens too, right?" The answer is yes — and it nearly eliminates AECP v1's advantage. Scoped views (AECP v2) restore meaningful savings by ensuring agents only read what's relevant to their role. The next frontier is prompt caching (60-80% cost reduction without protocol changes) and tool-based blackboard access.
+
+## Group D: 文言文 (Classical Chinese) Blackboard
+
+We added a fourth group to test whether the most information-dense natural language could reduce blackboard token costs. Group D used AECP v1 with all blackboard prose in 文言文 (Classical Chinese) while keeping code in Python.
+
+### Results
+
+| Metric | Group B (English) | Group D (文言文) | Delta |
+|---|---|---|---|
+| Characters per read | 5,397 | 2,620 | -51% (fewer chars) |
+| Tokens per read | 1,301 | 1,512 | +16% (more tokens) |
+| Total cost | ~18,820 | ~22,293 | +18.5% |
+| Tests passing | 18/18 | 18/18 | Equal quality |
+
+### Analysis
+
+Despite 51% character compression, CJK characters average 2.26 tokens each in cl100k_base (vs ~1.3 tokens per English word). The tokenizer's English-centric BPE vocabulary reverses the density advantage at the token level. Additional overhead comes from Group D's rules file (2.4× larger than Group B) due to bilingual signal tables needed to define 文言文 conventions.
+
+**Conclusion:** For current LLMs with English-centric tokenizers, English remains the most token-efficient natural language for structured agent communication. A CJK-optimized tokenizer (≤1.4 tokens/char) would flip this result.

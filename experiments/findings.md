@@ -419,6 +419,25 @@ Observer infrastructure also failed in both experiments. The designated observer
 
 This failure is itself a finding about blackboard-based systems: **shared state is only as accurate as the agents maintaining it.** Counters, timestamps, and metrics that require agents to update them will drift. Automated instrumentation is a prerequisite for reliable measurement.
 
+### Experiment 03D: 文言文 (Classical Chinese) Blackboard
+
+We tested whether Classical Chinese — the most information-dense natural language — could reduce blackboard token costs. Group D used AECP v1 with all blackboard prose in 文言文 while keeping code in Python.
+
+**Result: 文言文 costs 18.5% MORE tokens than English.**
+
+| Metric | Group B (English) | Group D (文言文) | Delta |
+|---|---|---|---|
+| Characters per read | 5,397 | 2,620 | -51% (fewer chars) |
+| Tokens per read | 1,301 | 1,512 | +16% (more tokens) |
+| Total cost | ~18,820 | ~22,293 | +18.5% |
+| Tests | 18/18 | 18/18 | Equal quality |
+
+Despite 51% character compression, CJK characters average 2.26 tokens each in cl100k_base (vs ~1.3 tokens per English word). The tokenizer's English-centric BPE vocabulary reverses the density advantage at the token level. 文言文 is a brilliant compression protocol trapped inside the wrong tokenizer.
+
+**Implication**: For current LLMs, English remains the most token-efficient natural language for structured agent communication. A CJK-optimized tokenizer (≤1.4 tokens/char) would flip this result.
+
+**Confound noted**: Agents reused across groups showed emergent CJK format leakage — some Group A/C agents adopted 文言文-style terse signals after serving in Group D. This suggests agents may spontaneously adopt denser communication formats when exposed to them.
+
 ---
 
 ## 6. Discussion
