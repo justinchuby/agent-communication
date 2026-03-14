@@ -78,12 +78,30 @@ class EventEmitter:
 | 型 | types.py | 甲 | 畢 | 清除未用import，加__lt__排序 |
 | 包初 | __init__.py | 甲 | 畢 | 匯出七公開符號 |
 | 發射器 | emitter.py | 乙 | 畢 | EventEmitter六法皆依契約實作 |
-| 審 | 全部 | 審者 | 阻(實作) | 待甲乙畢 |
-| 試 | test_emitter.py | 試者 | 阻(審) | 十五至二十試例 |
+| 審 | 全部 | 審者 | 畢(通) | 三檔皆合契約，無須改 |
+| 試 | test_emitter.py | 試者 | 畢 | 十八試皆通，0.03秒 |
 
 ## 所得
-<!-- 審者與試者以文言文記之 -->
+### 審者所得
+
+**types.py** — 通。型別名合契約。Listener以slots=True，加__lt__助排序，善。Subscription之cancel()冪等，防重取消。EventEmitterProtocol雖非契約所定，然有益於型檢。
+
+**emitter.py** — 通。六法皆合契約。
+- emit()先複列再遍之，防遍歷中改列之患。善。
+- 誤處合決策二：有handler則呼之不擲；無則收異畢後擲首異。
+- once聽者於全部遍畢後方削，序正確。
+- _add_listener以sort維序，逾限則發warning。
+- off()以is比fn，合事件發射器之慣例。
+- 空事件清理得宜（off與_remove_listener皆pop空列）。
+
+**__init__.py** — 通。七符號皆匯出，以__all__明之。
+
+**微議（不須改）：**
+- max_listeners設負值則同零（無限）。可也，然未明驗之。
+- _add_listener每次sort，O(n log n)。可用bisect.insort改為O(n)。然常用規模下無礙。
+
+**總判：通。代碼清潔，型標完備，契約盡合。**
 
 ## 度量
-遣訊：1
+遣訊：2
 問明：0
