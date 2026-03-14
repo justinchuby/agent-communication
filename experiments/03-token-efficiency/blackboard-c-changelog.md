@@ -17,3 +17,13 @@
 
 ## v1 (initial)
 - Blackboard created. Design pending.
+
+## v2 (dev-b)
+- emitter.py: done. EventEmitter class implemented with on/once/off/emit/cancel/wildcard/priority/error handling.
+
+## v3 (dev-a)
+- types.py: done. Subscription with __lt__ ordering, __post_init__ priority validation, cancel(). All error types and constants implemented.
+- __init__.py: done. Exports all public types + EventEmitter.
+
+## v4 (tester)
+- tests: done. 18/18 passed in 0.03s. Coverage: basic emission (3), priority ordering (2), once listeners (2), unsubscription (3), wildcard (2), error handling (2), max listeners (1), edge cases (3).

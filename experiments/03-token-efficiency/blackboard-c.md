@@ -125,11 +125,11 @@ class EventEmitter:
 | task-id | file | owner | status | notes |
 |---------|------|-------|--------|-------|
 | design | — | architect | done | all 8 ambiguities resolved |
-| types | types.py | dev-a | ready | interface stubs written in types.py |
-| pkg-init | __init__.py | dev-a | ready | export public API |
-| emitter | emitter.py | dev-b | ready | core logic |
+| types | types.py | dev-a | done | Subscription with __lt__, __post_init__ validation, cancel(); errors; constants |
+| pkg-init | __init__.py | dev-a | done | exports all public types + EventEmitter |
+| emitter | emitter.py | dev-b | done | core logic |
 | review | all | reviewer | blocked(impl) | |
-| tests | test_emitter.py | tester | blocked(review) | |
+| tests | test_emitter.py | tester | done | 18/18 passed in 0.03s |
 
 ## Findings
 
