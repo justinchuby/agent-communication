@@ -2,14 +2,14 @@
 
 **Agent-Efficient Communication Protocol — Comprehensive Experimental Results**
 **Date:** 2026-03-14
-**Research Team:** 7 agents across 5 roles (Project Lead, Radical Thinker, Architect, Designer, Generalist)
+**Research Team:** 5 agents across 5 roles (Project Lead, Radical Thinker, Architect, Designer, Generalist)
 **Experiments:** 4 total — 2 controlled A/B tests, 1 live protocol test, 1 scalability demonstration
 
 ---
 
 ## Abstract
 
-AI agents communicating in natural English waste the majority of their tokens on redundancy, social niceties, status updates, and clarification cycles — overhead that provides no value in machine-to-machine communication. This research develops and tests AECP (Agent-Efficient Communication Protocol), a layered architecture built on shared blackboards, typed contracts, and structured intent signals. Across two controlled A/B experiments with 10 AI agents each (5 per group, same model, same task), AECP achieved 63–77% message reduction while simultaneously improving communication readability by 24% and eliminating 100% of clarification requests in ambiguous-spec conditions. The core mechanism is elimination, not compression: shared artifacts remove the need for most messages entirely. Progressive compression layers, though designed, were never invoked in any live experiment — the blackboard alone did the work. These findings suggest that structured communication is strictly superior to natural language for agent coordination, with the strongest benefits emerging under ambiguity.
+AI agents communicating in natural English waste the majority of their tokens on redundancy, social niceties, status updates, and clarification cycles — overhead that provides no value in machine-to-machine communication. This research develops and tests AECP (Agent-Efficient Communication Protocol), a layered architecture built on shared blackboards, typed contracts, and structured intent signals. In single-trial experiments (n=1 per condition), across two controlled A/B experiments with 10 AI agents each (5 per group, same model, same task), AECP achieved 63–77% message reduction while simultaneously improving communication readability by an estimated 24% (measured AECP vs. estimated English baselines) and eliminating 100% of clarification requests in ambiguous-spec conditions. The core mechanism is elimination, not compression: shared artifacts remove the need for most messages entirely. Progressive compression layers, though designed, were never invoked in any live experiment — the blackboard and minimal structured signals did the work. These findings suggest that structured communication is strictly superior to natural language for agent coordination, with the strongest benefits emerging under ambiguity.
 
 ---
 
@@ -34,6 +34,11 @@ More specifically:
 - **H4:** Task quality (test pass rate, code quality) is preserved
 - **H5:** Structured messages are at least as readable as English
 
+Hypotheses H6–H8 emerged during experimental design and are evaluated in Appendix B:
+- **H6:** AECP reduces coordination time
+- **H7:** AECP reduces rework cycles
+- **H8:** AECP shifts ambiguity resolution from reactive to proactive
+
 ### AECP in Brief
 
 AECP is a 5-layer protocol stack, designed through cross-disciplinary synthesis drawing on information theory, linguistics, semiotics, biology, and distributed systems engineering:
@@ -46,13 +51,15 @@ AECP is a 5-layer protocol stack, designed through cross-disciplinary synthesis 
 | 2 | Structured Intent Protocol (SIP) | Typed JSON envelopes with fixed fields | English verbosity, grammatical overhead |
 | 3 | Progressive Context Compression (PCC) | Adaptive vocabulary, session-specific shorthand | Remaining structural boilerplate |
 
-The theoretical foundation traces to a single equation from information theory:
+The theoretical foundation traces to a core insight from information theory: **the more the receiver already knows, the less you need to say.** Layers -1 through 1 maximize shared context (what the receiver already knows); Layers 2–3 minimize encoding cost (how efficiently the remainder is expressed). The most powerful lever is shared context.
+
+Formally, this is captured by:
 
 ```
 C_msg = H(M) − I(M; K_R) + ε_enc
 ```
 
-Where H(M) is the entropy of the message, I(M; K_R) is the mutual information with the receiver's existing knowledge, and ε_enc is encoding overhead. Layers -1 through 1 maximize the middle term (what the receiver already knows); Layers 2–3 minimize the last term (encoding cost). The most powerful lever is shared context: the more the receiver knows, the less you need to say.
+Where H(M) is the entropy of the message, I(M; K_R) is the mutual information with the receiver's existing knowledge, and ε_enc is encoding overhead.
 
 ---
 
@@ -60,7 +67,7 @@ Where H(M) is the entropy of the message, I(M; K_R) is the mutual information wi
 
 ### The Core Insight: Layers Are Fallbacks, Not a Stack
 
-The most important theoretical finding of this research emerged not from design but from observation. Across every live experiment, agents used only Layers -1 and 0. Layer 2 (SIP) appeared in the form of structured JSON signals, but the full SIP specification was unnecessary. Layer 3 (PCC) was never invoked. Content-addressable references (Layer 1) were not needed.
+The most important theoretical finding of this research emerged not from design but from observation. Across every live experiment, agents used only Layers -1 and 0. Layer 2 (Structured Intent Protocol / SIP) appeared in the form of structured JSON signals, but the full SIP specification was unnecessary. Layer 3 (Progressive Context Compression / PCC) was never invoked. Content-addressable references (CAR, Layer 1) were not needed.
 
 This revealed that AECP's layers are not a stack to be climbed — they are a fallback chain. You engage the next layer only when the previous one cannot express what you need:
 
@@ -73,12 +80,17 @@ ELSE                                      → English escape hatch
 
 For well-structured tasks — which constitute the majority of agent coordination work — the blackboard alone achieves the bulk of message elimination. Higher layers are optimizations for progressively harder communication challenges.
 
-### The Two-Rule Distillation
+### The Two Rules and One Artifact
 
 The entire AECP protocol, in its most reduced form, comes down to two rules and one artifact:
 
+**Rules:**
+
 1. **Silence = working.** Don't announce progress. Don't acknowledge receipt. Don't celebrate. If you haven't said anything, you're proceeding normally.
 2. **Write state to the blackboard, not to messages.** Status updates, design decisions, review findings, test results — all go to the shared artifact. Messages are only for deviations from expectations.
+
+**Artifact (corollary):**
+
 3. **Make the contract executable.** Write typed Python interfaces, not English descriptions. The code IS the specification, the documentation, and the communication medium.
 
 In Experiment 01, these three elements alone eliminated 77% of all messages. The remaining 23% (5 messages from 5 agents) were minimal completion signals — one structured `{intent: 'DONE'}` per agent.
@@ -144,6 +156,8 @@ Together, RS + CE + CR form a measurement triangle: RS measures signal quality, 
 ---
 
 ## 4. Results
+
+> **Notation:** `~` indicates estimated values. `X–Y` denotes a range. Exact values have no qualifier.
 
 ### 4.1 Experiment 00a: 3-Agent Bug Hunt
 
@@ -249,7 +263,7 @@ This experiment was designed specifically to test H3 — the hypothesis that AEC
 | Metric | Group A (English) | Group B (AECP) | Delta |
 |--------|-------------------|----------------|-------|
 | Messages sent | ~19+ | ~5–7 | **63–74% reduction** |
-| Tests passing | 21/21 | 18/18+ | Both pass |
+| Tests passing | 21/21 | 18/18 | Both pass |
 | Clarifications | 12 | 0 | **100% elimination** |
 | Review issues | 2 medium + 2 low | 2 minor | |
 | Ambiguities resolved | 9/9 (reactive) | 9/9 (proactive) | Different timing |
@@ -299,7 +313,7 @@ The blackboard's ambiguity resolution matrix, written by the architect for desig
 |--------|----------------------|-------------------|-------|
 | Message reduction | 77% (22 → 5) | 63–74% (~19 → ~5–7) | Consistent 63–77% |
 | Clarifications (A : B) | 0 : 0 | 12 : 0 | AECP eliminates under ambiguity |
-| Tests (A : B) | 18/18 : 18/18 | 21/21 : 18/18+ | Both pass; Group A slightly higher in Exp 02 |
+| Tests (A : B) | 18/18 : 18/18 | 21/21 : 18/18 | Both pass |
 | Code quality | Equal | Equal | Consistent |
 | RS (A : B) | ~0.73 : 0.903 | — : — | AECP more readable |
 | PCC invoked? | No | No | Never needed |
@@ -351,7 +365,7 @@ The hierarchy of communication formats by effectiveness:
 
 ```
 Executable typed code (RS ~0.96) > Structured blackboard (RS ~0.93) >
-SIP JSON signals (RS ~0.87–0.94) > English prose (RS ~0.67–0.82)
+SIP JSON signals (RS ~0.81–0.94) > English prose (RS ~0.67–0.82)
 ```
 
 ### Finding 3: Proactive Beats Reactive Ambiguity Resolution
@@ -374,7 +388,7 @@ Task quality was identical or comparable across all experiments:
 |------------|---------------|---------------|---------|
 | 00a Bug Hunt | 13/13 (sim.) | 13/13 (live) | Equal |
 | 01 URL Shortener | 18/18 | 18/18 | Equal |
-| 02 Task Queue | 21/21 | 18/18+ | Both pass |
+| 02 Task Queue | 21/21 | 18/18 | Both pass |
 
 Code quality comparisons revealed different but valid engineering decisions in each group. Groups diverged on implementation details (deepcopy vs. direct references, max-attempts vs. infinite retry, rich vs. bare exception classes) while converging on architecture and correctness. In Experiment 02, both groups independently chose the same concurrency model, the same priority scheme, the same timeout defaults, and the same state machine design — 8 of 9 ambiguous decisions resolved identically.
 
@@ -429,16 +443,18 @@ PCC's three-phase evolution (bootstrap → compressed → implicit) is the same 
 
 ### When AECP Benefits Are Strongest vs. Weakest
 
-The experimental evidence suggests a clear gradient:
+The experimental evidence suggests a clear gradient across two dimensions — total message reduction and clarification reduction:
 
-**Strongest benefits (60–80% reduction):**
-- Ambiguous specifications where clarification is otherwise needed (Exp 02: 12 → 0 clarifications)
+**Strongest total message reduction (60–80%):**
+- Well-defined tasks with typed contracts (Exp 01: 77% message reduction — status updates, duplicates, and social messages eliminated)
 - Multi-agent coordination with status tracking (Exp 01: 50% of English messages were zero-information)
-- Tasks with well-defined interfaces amenable to typed contracts
 - Larger teams where relay messages and context re-establishment scale quadratically
 
-**Moderate benefits (40–60% reduction):**
-- Well-specified tasks where clarification isn't needed anyway (Exp 01: 77% message reduction but 0:0 clarifications)
+**Strongest clarification reduction (added on top of message reduction):**
+- Ambiguous specifications where clarification is otherwise needed (Exp 02: 12 → 0 clarifications, 100% elimination)
+- Note: well-specified tasks see no clarification benefit (Exp 01: 0:0 — no gap to close), but still achieve 60–80% message reduction from other sources
+
+**Moderate total message reduction (40–60%, estimated):**
 - Small teams (2–3 agents) where the blackboard's overhead may approach the savings
 
 **Weakest benefits (20–40% reduction, estimated):**
@@ -493,7 +509,7 @@ Experiment 01's task included typed Python interfaces in the specification, givi
 
 ### No Failure Mode Testing
 
-No experiment tested protocol failure modes: stale blackboard data, PCC reference drift, agent crashes, or protocol violations under stress. The FMEA identifies 3 critical risks (ref drift RPN 280, trigger cascade RPN 224, context window decay RPN 210) that remain theoretical.
+No experiment tested protocol failure modes: stale blackboard data, PCC reference drift, agent crashes, or protocol violations under stress. The Failure Mode and Effects Analysis (FMEA) identifies 3 critical risks, scored by Risk Priority Number (RPN, scale 1–1000): ref drift (RPN 280), trigger cascade (RPN 224), and context window decay (RPN 210) — all remain theoretical.
 
 ---
 
@@ -529,11 +545,11 @@ No experiment tested protocol failure modes: stale blackboard data, PCC referenc
 
 ## 9. Conclusion
 
-AECP demonstrates that structured communication between AI agents is strictly superior to natural language for coordination tasks. Across two controlled A/B experiments, the protocol achieved 63–77% message reduction while simultaneously improving readability by 24% and eliminating 100% of clarification requests under ambiguity.
+In our single-trial experiments, AECP shows that structured communication between AI agents can be strictly superior to natural language for coordination tasks. Across two controlled A/B experiments (n=1 per condition), the protocol achieved 63–77% message reduction while simultaneously improving readability by an estimated 24% and eliminating 100% of clarification requests under ambiguity.
 
 The key mechanism is not compression — it is elimination. Shared blackboards remove the need for status updates, relay messages, and context re-establishment. Typed contracts remove the need for clarification. Communication-by-exception removes the need for acknowledgments and progress reports. What remains is a minimal set of completion signals: one structured message per agent per task.
 
-The protocol's greatest value emerges under ambiguity. When specifications are incomplete, English teams discover gaps mid-implementation and engage in reactive Q&A cycles. AECP's blackboard forces proactive resolution — the architect fills in empty decision fields before anyone starts. The medium is the intervention: structured artifacts impose a quality standard on specifications that ad-hoc messaging does not.
+In our single-trial experiments, the protocol's greatest value emerged under ambiguity. When specifications are incomplete, English teams discover gaps mid-implementation and engage in reactive Q&A cycles. AECP's blackboard forces proactive resolution — the architect fills in empty decision fields before anyone starts. The medium is the intervention: structured artifacts impose a quality standard on specifications that ad-hoc messaging does not.
 
 Three results should survive replication:
 
@@ -560,16 +576,18 @@ AECP's two-rule essence — silence means working, write state to artifacts not 
 
 ## Appendix B: Hypothesis Evaluation Summary
 
+> **Note:** H1–H5 were pre-registered hypotheses stated in §1. H6–H8 emerged during experimental design and are post-hoc observations generated from the data, not pre-registered hypotheses. They are included for completeness but should be interpreted with appropriate caution.
+
 | ID | Hypothesis | Exp 01 | Exp 02 | Combined |
 |----|-----------|--------|--------|----------|
-| H1 | Token reduction ≥ 60% | Supported (~77% by message proxy) | Supported (~63–74%) | **Supported** |
+| H1 | Token reduction ≥ 60% | ~77% by message proxy | ~63–74% by message proxy | **Not directly tested** — message reduction (77%) used as proxy, but token-level measurement was not performed |
 | H2 | Message reduction ≥ 50% | **Confirmed** (77%, 22 → 5) | **Confirmed** (63–74%) | **Confirmed** |
 | H3 | Clarification reduction | Inconclusive (0:0 floor) | **Confirmed** (12 → 0, 100%) | **Confirmed** |
-| H4 | Equal task quality | **Confirmed** (18:18) | **Confirmed** (21:18+) | **Confirmed** |
+| H4 | Equal task quality | **Confirmed** (18:18) | **Confirmed** (21:18) | **Confirmed** |
 | H5 | Readability ≥ English | Supported (0.903 vs ~0.73) | Not formally scored | **Supported** |
-| H6 | Time reduction | Inconclusive (no timestamps) | Inconclusive | **Inconclusive** |
-| H7 | Rework reduction | Supported (0 vs 1 cycle) | Not comparable | **Supported** |
-| H8 | Ambiguity resolution shift | N/A | **Confirmed** (reactive → proactive) | **Confirmed** |
+| H6 | Time reduction *(post-hoc)* | Inconclusive (no timestamps) | Inconclusive | **Inconclusive** |
+| H7 | Rework reduction *(post-hoc)* | Supported (0 vs 1 cycle) | Not comparable | **Supported** |
+| H8 | Ambiguity resolution shift *(post-hoc)* | N/A | **Confirmed** (reactive → proactive) | **Confirmed** |
 
 ## Appendix C: Measurement Triangle
 
