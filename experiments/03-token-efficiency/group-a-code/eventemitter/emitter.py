@@ -28,8 +28,9 @@ class EventEmitter:
     Within the same priority, listeners are called in registration order (FIFO).
 
     Args:
-        max_listeners: Optional per-event listener cap. When exceeded, a
-            ``MaxListenersWarning`` is issued (not an error).
+        max_listeners: Per-event listener cap (default 10). When exceeded, a
+            ``MaxListenersWarning`` is issued (not a hard error). Set to 0
+            to disable the warning.
         error_handler: Optional callback ``(event, exception, listener)`` invoked
             when a listener raises. If not set, exceptions are collected and
             re-raised as an ``EmitError`` after all listeners run.
@@ -37,12 +38,34 @@ class EventEmitter:
 
     def __init__(
         self,
-        max_listeners: int | None = None,
+        max_listeners: int = 10,
         error_handler: ErrorHandler | None = None,
     ) -> None:
         self._listeners: dict[str, list[Subscription]] = defaultdict(list)
         self._max_listeners = max_listeners
         self._error_handler = error_handler
+
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
+
+    @property
+    def max_listeners(self) -> int:
+        """Per-event listener cap. 0 means unlimited (no warning)."""
+        return self._max_listeners
+
+    @max_listeners.setter
+    def max_listeners(self, value: int) -> None:
+        self._max_listeners = value
+
+    @property
+    def error_handler(self) -> ErrorHandler | None:
+        """Callback invoked when a listener raises during emit()."""
+        return self._error_handler
+
+    @error_handler.setter
+    def error_handler(self, value: ErrorHandler | None) -> None:
+        self._error_handler = value
 
     # ------------------------------------------------------------------
     # Registration
@@ -70,8 +93,10 @@ class EventEmitter:
     # Emission
     # ------------------------------------------------------------------
 
-    def emit(self, event: str, *args: object, **kwargs: object) -> None:
+    def emit(self, event: str, *args: object, **kwargs: object) -> bool:
         """Emit *event*, calling all registered listeners in priority order.
+
+        Returns True if the event had listeners, False otherwise.
 
         Listeners that raise are handled by ``error_handler`` if set.
         Otherwise, exceptions are collected and raised together as ``EmitError``
@@ -79,12 +104,15 @@ class EventEmitter:
         """
         # Snapshot the listener list so mutations during emit are safe
         subscriptions = list(self._listeners.get(event, []))
+        active_subs = [s for s in subscriptions if not s._cancelled]
+
+        if not active_subs:
+            return False
+
         errors: list[Exception] = []
         to_remove: list[Subscription] = []
 
-        for sub in subscriptions:
-            if sub._cancelled:
-                continue
+        for sub in active_subs:
             try:
                 sub.listener(*args, **kwargs)
             except Exception as exc:
@@ -102,6 +130,8 @@ class EventEmitter:
 
         if errors:
             raise EmitError(event, errors)
+
+        return True
 
     # ------------------------------------------------------------------
     # Unsubscription
@@ -171,8 +201,8 @@ class EventEmitter:
                 break
         subs.insert(insert_idx, sub)
 
-        # Warn if max_listeners exceeded
-        if self._max_listeners is not None:
+        # Warn if max_listeners exceeded (0 = unlimited)
+        if self._max_listeners > 0:
             active = self.listener_count(event)
             if active > self._max_listeners:
                 warnings.warn(
