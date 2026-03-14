@@ -75,9 +75,9 @@ class EventEmitter:
 | 務號 | 檔 | 主 | 狀 | 註 |
 |------|-----|----|----|-----|
 | 設計 | — | 建築師 | 畢 | 八歧盡決，介面既定 |
-| 型 | types.py | 甲 | 可始 | types.py已有介面，甲可補充或直用 |
-| 包初 | __init__.py | 甲 | 可始 | 匯出公開介面 |
-| 發射器 | emitter.py | 乙 | 可始 | EventEmitter六法皆依契約實作 |
+| 型 | types.py | 甲 | 畢 | 清除未用import，加__lt__排序 |
+| 包初 | __init__.py | 甲 | 畢 | 匯出七公開符號 |
+| 發射器 | emitter.py | 乙 | 畢 | EventEmitter六法皆依契約實作 |
 | 審 | 全部 | 審者 | 阻(實作) | 待甲乙畢 |
 | 試 | test_emitter.py | 試者 | 阻(審) | 十五至二十試例 |
 

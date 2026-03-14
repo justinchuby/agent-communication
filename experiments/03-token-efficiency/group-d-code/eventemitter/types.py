@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol
-from enum import IntEnum
 
 
 # ---------------------------------------------------------------------------
@@ -42,6 +41,12 @@ class Listener:
     priority: int = 0           # lower number = higher priority (1 is highest)
     once: bool = False
     _seq: int = 0               # insertion order for FIFO tie-breaking
+
+    def __lt__(self, other: Listener) -> bool:
+        """Sort by priority ascending, then by insertion order (FIFO)."""
+        if self.priority != other.priority:
+            return self.priority < other.priority
+        return self._seq < other._seq
 
 
 @dataclass(slots=True)
