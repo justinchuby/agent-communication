@@ -128,11 +128,51 @@ class EventEmitter:
 | types | types.py | dev-a | done | Subscription with __lt__, __post_init__ validation, cancel(); errors; constants |
 | pkg-init | __init__.py | dev-a | done | exports all public types + EventEmitter |
 | emitter | emitter.py | dev-b | done | core logic |
-| review | all | reviewer | blocked(impl) | |
+| review | all | reviewer | done | PASS — 1 medium, 2 low, 1 trivial |
 | tests | test_emitter.py | tester | done | 18/18 passed in 0.03s |
 
 ## Findings
 
+### Review — Code Reviewer (d52f0208)
+
+**Checklist: 11/12 pass, 1 warning**
+- [x] types.py: Subscription.cancel() calls _emitter._remove_subscription()
+- [x] types.py: ListenerError.errors correct tuple shape
+- [x] types.py: InvalidPriorityError inherits EventEmitterError + ValueError
+- [x] emitter.py: priority validated on on()/once()
+- [x] emitter.py: wildcard listeners called AFTER specific
+- [x] emitter.py: wildcard receives event_name as first arg
+- [x] emitter.py: once() auto-removes after first call
+- [⚠] emitter.py: error_handler semantics — partial AMB-2 violation (Issue #1)
+- [x] emitter.py: max_listeners warning (not block)
+- [x] emitter.py: emit() returns list in execution order
+- [x] emitter.py: FIFO within same priority
+- [x] __init__.py: all public types exported
+
+**Issue #1 (Medium): error_handler exception breaks "all listeners execute" guarantee**
+File: emitter.py lines 269-273, 291-295
+If `error_handler` itself throws, the exception propagates out of `_call_listener` and remaining listeners are skipped. AMB-2 says "All listeners execute regardless of errors." Fix: wrap the `self._error_handler(...)` call in try/except inside both `_call_listener` and `_call_wildcard_listener`.
+
+**Issue #2 (Low): Subscription.__lt__ UUID tiebreak is non-FIFO**
+File: types.py lines 87-90
+`__lt__` uses `self.id < other.id` for same-priority tiebreak. UUIDs are random — not insertion-ordered. Not used by emitter.py internally (`_ListenerEntry` uses `registration_order` which IS correct). But misleading for external code that sorts Subscriptions directly.
+
+**Issue #3 (Low): max_listeners setter lacks validation**
+File: emitter.py lines 170-172
+Accepts any value including negative. Negative values silently act as "unlimited" (like 0). Consider rejecting negative values.
+
+**Issue #4 (Trivial): _call_listener/_call_wildcard_listener near-duplication**
+File: emitter.py lines 252-296
+Both methods differ only in whether event_name is prepended to args. Could be unified with a parameter.
+
+**Positives:**
+- Clean `_ListenerEntry` wrapper with `@dataclass(order=True)` — elegant priority+FIFO ordering via `bisect.insort`
+- Snapshot iteration in `emit()` (`list(...)`) prevents mutation-during-iteration bugs from once() cancellation
+- Good separation: types.py defines the contract, emitter.py implements behavior
+- `emit("*")` correctly avoids double-firing wildcard listeners (line 130 guard)
+- Thorough callable validation, priority validation, and edge case handling
+
+**VERDICT: PASS** — Issue #1 is a real edge case but unlikely in practice (requires error_handler to throw). Core behavior is correct and well-implemented.
 
 ## Metrics
 messages_sent: 1

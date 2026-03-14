@@ -27,3 +27,11 @@
 
 ## v4 (tester)
 - tests: done. 18/18 passed in 0.03s. Coverage: basic emission (3), priority ordering (2), once listeners (2), unsubscription (3), wildcard (2), error handling (2), max listeners (1), edge cases (3).
+
+## v5 (reviewer)
+- review: PASS. 11/12 checklist items pass, 1 warning.
+- Issue #1 (Medium): error_handler exception breaks AMB-2 "all listeners execute" — wrap error_handler call in try/except in _call_listener and _call_wildcard_listener.
+- Issue #2 (Low): Subscription.__lt__ UUID tiebreak is non-FIFO (not used internally, cosmetic).
+- Issue #3 (Low): max_listeners setter accepts negative values (no validation).
+- Issue #4 (Trivial): _call_listener/_call_wildcard_listener near-duplication.
+- Assignment status: review → done.
